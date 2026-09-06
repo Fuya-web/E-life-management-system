@@ -153,10 +153,6 @@
 </header>
 
 <main>
-  <div class="hint" data-i18n="hint">
-    v0.5：管理员工作台（销售 / 团队 / 薪酬三大块，含录入与操作）+ 销售员看板。用顶部「系统时间」快进验证级别、亮暗、提成、累计待打款。
-  </div>
-
   <div class="tabs">
     <button id="tabManage" class="active" data-i18n="tab_manage" onclick="switchTab('manage')">管理看板</button>
     <button id="tabBoard" data-i18n="tab_board" onclick="switchTab('board')">收入看板</button>
@@ -332,7 +328,7 @@ now.setHours(0, 0, 0, 0);
 let pendingAction = null, toastTimer = null, syncTimer = null;
 
 // ---------- 多语言 i18n ----------
-let lang = localStorage.getItem('elife_lang') || 'zh';
+let lang = localStorage.getItem('elife_lang') || 'en';
 function t(key) { return (I18N[lang] && I18N[lang][key]) || (I18N.zh[key] || key); }
 function setLang(l) { lang = l; localStorage.setItem('elife_lang', l); render(); }
 function applyI18n() {
