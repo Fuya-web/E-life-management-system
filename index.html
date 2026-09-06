@@ -1,0 +1,1667 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>E-Life 数据管理版 v0.2</title>
+<style>
+  :root {
+    --bg: #f7f7f5; --card: #ffffff; --border: #e5e4df;
+    --text: #2c2c2a; --muted: #888780;
+    --blue: #185fa5; --blue-bg: #e6f1fb;
+    --amber: #ba7517; --amber-bg: #faeeda;
+    --green: #3b6d11; --green-bg: #eaf3de;
+    --purple: #534ab7; --purple-bg: #eeedfe;
+    --red: #a32d2d;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; font-size: 14px; line-height: 1.6; }
+  header { background: var(--card); border-bottom: 1px solid var(--border); padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; }
+  header h1 { font-size: 16px; margin: 0; font-weight: 600; }
+  .tag { font-size: 12px; color: var(--muted); }
+  .clock { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+  .clock .now { font-weight: 600; color: var(--blue); }
+  .rolebar { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+  .rolebar select { padding: 5px 8px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; background: #fff; color: var(--text); }
+  .btn { border: 1px solid var(--border); background: var(--card); color: var(--text); padding: 6px 14px; border-radius: 8px; cursor: pointer; font-size: 13px; }
+  .btn:hover { border-color: #c9c7bf; }
+  .btn.primary { background: var(--blue); border-color: var(--blue); color: #fff; }
+  .btn.danger { color: var(--red); border-color: #f0c9c9; }
+  .btn.small { padding: 3px 10px; font-size: 12px; }
+  main { max-width: 1120px; margin: 0 auto; padding: 20px 24px 60px; }
+  .grid { display: grid; grid-template-columns: 340px 1fr; gap: 20px; align-items: start; }
+  @media (max-width: 880px) { .grid { grid-template-columns: 1fr; } }
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 18px; margin-bottom: 16px; }
+  .card h2 { font-size: 14px; margin: 0 0 12px; font-weight: 600; }
+  .field { margin-bottom: 10px; }
+  .field label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+  .field input, .field select { width: 100%; padding: 7px 10px; border: 1px solid var(--border); border-radius: 8px; font-size: 13px; background: #fff; color: var(--text); }
+  .row { display: flex; gap: 8px; }
+  .row .field { flex: 1; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 7px 9px; border-bottom: 1px solid var(--border); }
+  th { color: var(--muted); font-weight: 500; font-size: 12px; white-space: nowrap; }
+  .badge { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px; }
+  .l0 { background: var(--blue-bg); color: var(--blue); }
+  .l1 { background: var(--amber-bg); color: var(--amber); }
+  .l2 { background: var(--purple-bg); color: var(--purple); }
+  .l3 { background: var(--green-bg); color: var(--green); }
+  .none { background: #f1efe8; color: #888780; }
+  .lit { color: var(--green); }
+  .dim { color: var(--red); }
+  .muted { color: var(--muted); font-size: 12px; }
+  .status { color: var(--muted); font-size: 12px; }
+  .hint { background: var(--blue-bg); color: var(--blue); padding: 10px 14px; border-radius: 8px; font-size: 12px; margin-bottom: 16px; }
+  .no { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  .modal { position: fixed; inset: 0; background: rgba(0,0,0,0.35); display: none; align-items: center; justify-content: center; z-index: 50; }
+  .modal-box { background: #fff; border-radius: 12px; padding: 22px; max-width: 360px; width: 90%; }
+  .modal-box p { margin: 0 0 16px; font-size: 14px; }
+  .modal-actions { display: flex; justify-content: flex-end; gap: 10px; }
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #2c2c2a; color: #fff; padding: 9px 18px; border-radius: 8px; font-size: 13px; display: none; z-index: 200; }
+  /* ---------- 看板 ---------- */
+  .tabs { display: flex; gap: 6px; margin-bottom: 16px; }
+  .tabs button { border: 1px solid var(--border); background: var(--card); color: var(--text); padding: 7px 18px; border-radius: 8px; cursor: pointer; font-size: 13px; }
+  .tabs button.active { background: var(--blue); border-color: var(--blue); color: #fff; }
+  .board-top { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
+  .board-id { display: flex; align-items: center; gap: 10px; font-size: 15px; }
+  .board-id .name { font-weight: 600; font-size: 17px; }
+  .board-cycle { font-size: 12px; color: var(--muted); }
+  .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
+  .sec-title { font-size: 13px; font-weight: 600; color: var(--muted); margin: 4px 0 8px; }
+  .goal-num { display: flex; align-items: center; gap: 8px; }
+  .goal-num .num-part { display: flex; flex-direction: column; align-items: center; line-height: 1.25; }
+  .goal-num .sep { font-size: 20px; color: var(--muted); font-weight: 400; }
+  .goal-num .done-tag, .goal-num .target-tag { display: block; font-size: 11px; color: var(--muted); font-weight: 400; }
+  .goal-num .done-tag { color: var(--green); }
+  .goal-num .target-tag { color: var(--muted); }
+  @media (max-width: 720px) { .cards { grid-template-columns: 1fr; } }
+  .money-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+  .money-card .k { font-size: 12px; color: var(--muted); }
+  .money-card .v { font-size: 24px; font-weight: 700; margin-top: 2px; }
+  .money-card .sub { font-size: 12px; color: var(--muted); }
+  details { border: 1px solid var(--border); border-radius: 10px; background: #fff; margin-bottom: 8px; overflow: hidden; }
+  details summary { cursor: pointer; padding: 10px 14px; font-size: 13px; font-weight: 500; list-style: none; user-select: none; }
+  details summary::-webkit-details-marker { display: none; }
+  details summary::before { content: '▸ '; color: var(--muted); }
+  details[open] summary::before { content: '▾ '; }
+  details .inner { padding: 0 14px 12px; border-top: 1px solid var(--border); }
+  details .inner table { margin-top: 8px; }
+  .goal { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 8px; }
+  @media (max-width: 720px) { .goal { grid-template-columns: 1fr; } }
+  .goal-box { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 14px; }
+  .goal-box .k { font-size: 12px; color: var(--muted); }
+  .goal-box .v { font-size: 22px; font-weight: 700; }
+  .goal-box .v.hit { color: var(--green); }
+  .goal-box .v.miss { color: var(--red); }
+  .tree { font-size: 13px; line-height: 1.9; }
+  .tree ul { list-style: none; margin: 0; padding-left: 18px; border-left: 1px dashed var(--border); }
+  .tree > ul { padding-left: 0; border-left: none; }
+  .tree li { position: relative; }
+  .board-block { border-radius: 14px; padding: 16px; margin-bottom: 16px; }
+  .board-block > h2 { margin: 0 0 12px; font-size: 15px; font-weight: 600; color: var(--text); }
+  .block-sub { font-size: 13px; font-weight: 500; color: var(--muted); margin: 14px 0 8px; }
+  .sales-block { background: var(--blue-bg); }
+  .team-block { background: #faeeda; }
+  .pay-block { background: var(--green-bg); }
+  .perm-block { background: var(--purple-bg); }
+  .pager { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+  .pager .btn[disabled] { opacity: 0.4; cursor: default; }
+  th.sortable { cursor: pointer; user-select: none; }
+  th.sortable:hover { color: var(--text); }
+  .login-cover { position: fixed; inset: 0; background: var(--blue-bg); display: flex; align-items: center; justify-content: center; z-index: 100; }
+  .login-box { background: #fff; border: 1px solid var(--border); border-radius: 16px; padding: 32px; width: 360px; max-width: 90vw; box-shadow: 0 8px 30px rgba(0,0,0,0.06); }
+  .login-box h1 { margin: 0 0 4px; font-size: 26px; color: var(--blue); }
+  .login-box .subtitle { margin: 0 0 20px; font-size: 13px; color: var(--muted); }
+  .login-box .field { margin-bottom: 12px; }
+  .login-box button { width: 100%; margin-bottom: 8px; padding: 9px; }
+  .alert { padding: 8px 14px; border-radius: 8px; font-size: 13px; margin-bottom: 8px; }
+  .alert.up { background: var(--blue-bg); color: var(--blue); }
+  .alert.ind { background: var(--green-bg); color: var(--green); }
+  .alert.down { background: #fdecec; color: var(--red); }
+  .alert.none { background: #f1efe8; color: #888780; }
+
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+<div class="login-cover" id="loginCover">
+  <div class="login-box">
+    <h1>E-Life</h1>
+    <p class="subtitle" data-i18n="login_subtitle">销售与薪酬管理系统</p>
+    <div class="field"><label data-i18n="account">账号（手机号）</label><input id="coverPhone" data-i18n-ph="account" placeholder="账号"></div>
+    <div class="field"><label data-i18n="password">密码</label><input id="coverPwd" type="password" data-i18n-ph="password" placeholder="密码"></div>
+    <div id="coverErr" style="display:none;color:var(--red);font-size:12px;margin-bottom:8px"></div>
+    <button class="btn primary" data-i18n="login" onclick="coverLogin()">登录</button>
+    <div class="muted" style="margin-top:8px;font-size:12px" data-i18n="test_accounts">测试账号：admin / admin123（管理员）、staff / staff123（店员）、finance / finance123（财务）</div>
+  </div>
+</div>
+<header>
+  <h1 data-i18n="app_title">E-Life 信息管理系统 <span class="tag" data-i18n="tag">v0.5 · 管理员工作台 + 销售员看板</span></h1>
+  <div class="clock">
+    <span data-i18n="sys_time">系统时间：</span><span class="now" id="nowLabel"></span>
+  </div>
+  <div class="rolebar">
+    <span id="authLabel">测试模式</span>
+    <button class="btn small primary" id="btnLogin" data-i18n="login" onclick="showLogin()">登录</button>
+    <button class="btn small" id="btnChangePwd" data-i18n="change_pwd" onclick="showChangePwd()" style="display:none">改密码</button>
+    <button class="btn small" id="btnLogout" data-i18n="logout" onclick="logout()" style="display:none">退出</button>
+    <select id="langSel" onchange="setLang(this.value)" style="margin-left:4px">
+      <option value="zh">中文</option>
+      <option value="en">English</option>
+    </select>
+  </div>
+</header>
+
+<main>
+  <div class="hint" data-i18n="hint">
+    v0.5：管理员工作台（销售 / 团队 / 薪酬三大块，含录入与操作）+ 销售员看板。用顶部「系统时间」快进验证级别、亮暗、提成、累计待打款。
+  </div>
+
+  <div class="tabs">
+    <button id="tabManage" class="active" data-i18n="tab_manage" onclick="switchTab('manage')">管理看板</button>
+    <button id="tabBoard" data-i18n="tab_board" onclick="switchTab('board')">收入看板</button>
+  </div>
+
+  <div id="viewManage">
+    <!-- 销售管理（自然月） -->
+    <div class="board-block sales-block">
+      <h2 data-i18n="sales_block">销售管理（自然月）</h2>
+      <div class="cards" id="salesStats"></div>
+      <div class="card" id="cardOrder">
+        <h2 data-i18n="new_order">下单入口</h2>
+        <div class="field"><label data-i18n="seller">销售员（谁卖的）</label><select id="oMember"></select></div>
+        <div class="row">
+          <div class="field"><label data-i18n="model">车型</label><input id="oModel"></div>
+          <div class="field"><label data-i18n="price">零售价（$）</label><input id="oPrice" type="number" min="0"></div>
+          <div class="field"><label data-i18n="qty">件数</label><input id="oQty" type="number" min="1" value="1"></div>
+        </div>
+        <button class="btn primary" data-i18n="record_order" onclick="addOrder()">录入订单</button>
+      </div>
+      <div class="card">
+        <h2 data-i18n="order_list">订单明细与操作（时间近→远）</h2>
+        <table>
+          <thead><tr><th data-i18n="col_seller">销售员</th><th data-i18n="col_model">车型</th><th data-i18n="col_price">单价</th><th data-i18n="col_qty">件数</th><th data-i18n="col_date">完成日期</th><th data-i18n="col_status">状态</th><th data-i18n="col_ops">操作</th></tr></thead>
+          <tbody id="orderTable"></tbody>
+        </table>
+        <div id="orderPager"></div>
+      </div>
+    </div>
+
+    <!-- 团队管理 -->
+    <div class="board-block team-block">
+      <h2 data-i18n="team_block">团队管理</h2>
+      <div class="cards" id="teamStats"></div>
+      <div class="block-sub" data-i18n="sellers_month">本月出单销售员</div>
+      <div id="adminSellers"></div>
+      <div id="sellersPager"></div>
+      <div class="card" id="cardMemberTable">
+        <h2 data-i18n="member_table">所有销售员业绩一览（自然月）</h2>
+        <table>
+          <thead><tr><th class="sortable" data-i18n="col_no" onclick="sortMember('no')">编号</th><th data-i18n="col_name">姓名</th><th data-i18n="col_level">级别</th><th data-i18n="col_cycle">滚动月</th><th class="sortable" data-i18n="col_base" onclick="sortMember('base')">本月底薪</th><th class="sortable" data-i18n="col_comm" onclick="sortMember('comm')">本月提成</th><th class="sortable" data-i18n="col_total" onclick="sortMember('total')">本月合计</th><th class="sortable" data-i18n="col_team" onclick="sortMember('team')">本月团队出单</th><th class="sortable" data-i18n="col_own" onclick="sortMember('own')">本月自己出单</th><th class="sortable" data-i18n="col_new" onclick="sortMember('new')">本月开发新人</th></tr></thead>
+          <tbody id="memberTable"></tbody>
+        </table>
+        <div id="memberPager"></div>
+      </div>
+      <div class="card" id="cardMember">
+        <h2 data-i18n="add_member">录入人员</h2>
+        <div class="row">
+          <div class="field"><label><span data-i18n="name">姓名</span><span style="color:var(--red)"> *</span></label><input id="mName" required data-i18n-ph="ph_name" placeholder="如 Sopheak"></div>
+          <div class="field"><label><span data-i18n="gender">性别</span><span style="color:var(--red)"> *</span></label><select id="mGender" required><option value="女" data-i18n="gender_f">女</option><option value="男" data-i18n="gender_m">男</option></select></div>
+        </div>
+        <div class="row">
+          <div class="field"><label><span data-i18n="id_number">身份证号</span><span style="color:var(--red)"> *</span></label><input id="mId" required data-i18n-ph="ph_id" placeholder="身份证号"></div>
+          <div class="field"><label><span data-i18n="phone">联系电话</span><span style="color:var(--red)"> *</span></label><input id="mPhone" required data-i18n-ph="ph_phone" placeholder="联系电话"></div>
+        </div>
+        <div class="field"><label data-i18n="address">联系地址</label><input id="mAddr" data-i18n-ph="ph_addr" placeholder="联系地址"></div>
+        <div class="field"><label data-i18n="bank_name">银行户名（可选）</label><input id="mBankName" data-i18n-ph="ph_bankname" placeholder="开户人姓名"></div>
+        <div class="row">
+          <div class="field"><label data-i18n="bank_account">银行卡号（可选）</label><input id="mBankAccount" data-i18n-ph="ph_bankacc" placeholder="银行卡号"></div>
+          <div class="field"><label data-i18n="bank_branch">开户行（可选）</label><input id="mBankBranch" data-i18n-ph="ph_bankbranch" placeholder="如 ABA Bank"></div>
+        </div>
+        <div class="field"><label><span data-i18n="recommender">推荐人</span><span style="color:var(--red)"> *</span></label><select id="mRef"><option value="" data-i18n="no_ref">无（公司直招）</option></select></div>
+        <button class="btn primary" data-i18n="add_member" onclick="addMember()">录入人员</button>
+      </div>
+      <div class="block-sub" data-i18n="level_alerts">级别变动预警</div>
+      <div id="adminAlerts"></div>
+      <div class="block-sub" data-i18n="team_tree">团队树总览</div>
+      <div class="card"><div class="tree" id="adminTree"></div></div>
+    </div>
+
+    <!-- 薪酬管理 -->
+    <div class="board-block pay-block">
+      <h2 data-i18n="pay_block">薪酬管理</h2>
+      <div class="block-sub" data-i18n="pending_payroll">待发薪总览（每人待打款）</div>
+      <div class="card" style="padding:8px">
+        <table>
+          <thead><tr><th data-i18n="col_no">编号</th><th data-i18n="col_name">姓名</th><th data-i18n="col_due">累计应得</th><th data-i18n="col_paid">已打款</th><th data-i18n="col_pending">待打款</th></tr></thead>
+          <tbody id="adminSalaryTable"></tbody>
+        </table>
+      </div>
+      <div class="card" id="cardAdjust">
+        <h2 data-i18n="salary_adj">薪酬调整入口</h2>
+        <div class="field"><label data-i18n="person">人员</label><select id="aMember"></select></div>
+        <div class="field"><label data-i18n="amount">金额（$，正=奖励 / 负=扣减）</label><input id="aAmount" type="number" data-i18n-ph="ph_amount" placeholder="如 -50"></div>
+        <div class="field"><label data-i18n="note">备注（必填）</label><input id="aNote" data-i18n-ph="ph_note" placeholder="如：退单业绩回退调整"></div>
+        <button class="btn primary" data-i18n="record_adjustment" onclick="addAdjustment()">录入调整项</button>
+      </div>
+      <div class="card" id="cardPay">
+        <h2 data-i18n="record_payment">录入打款</h2>
+        <div class="field"><label data-i18n="person">人员</label><select id="pMember" onchange="updatePayInfo()"></select></div>
+        <div id="payInfo" class="muted" style="margin-bottom:8px"></div>
+        <div class="field"><label data-i18n="pay_amount">打款金额（$，正数）</label><input id="pAmount" type="number" min="0" data-i18n-ph="ph_payamt" placeholder="如 500"></div>
+        <div class="field"><label data-i18n="pay_note">备注（可选）</label><input id="pNote" data-i18n-ph="ph_paynote" placeholder="如：8月提成款"></div>
+        <button class="btn primary" data-i18n="record_payment" onclick="addPayment()">记录打款</button>
+      </div>
+    </div>
+
+    <!-- 权限配置（仅管理员） -->
+    <div class="board-block perm-block" id="blockPerm">
+      <h2 data-i18n="perm_block">权限配置</h2>
+      <div class="card" id="cardAccount">
+        <h2 data-i18n="staff_accounts">员工账号管理</h2>
+        <div class="row">
+          <div class="field"><label data-i18n="name">姓名</label><input id="accName" data-i18n-ph="ph_accname" placeholder="如 店员小张"></div>
+          <div class="field"><label data-i18n="acc_phone">账号（手机号）</label><input id="accPhone" data-i18n-ph="ph_accphone" placeholder="手机号"></div>
+        </div>
+        <div class="row">
+          <div class="field"><label data-i18n="acc_pwd">初始密码</label><input id="accPwd" value="123456"></div>
+          <div class="field"><label data-i18n="acc_role">角色</label><select id="accRole"><option value="staff" data-i18n="role_staff">店员</option><option value="finance" data-i18n="role_finance">财务</option><option value="admin" data-i18n="role_admin">管理员</option></select></div>
+        </div>
+        <button class="btn primary" data-i18n="new_account" onclick="addAccount()">新建账号</button>
+        <div id="accountList" style="margin-top:10px"></div>
+      </div>
+      <div class="card" id="cardSalesAccount">
+        <h2 data-i18n="sales_accounts">销售员账号</h2>
+        <div class="block-sub" data-i18n="reset_seller_pwd">重置销售员密码</div>
+        <div class="row" style="align-items:flex-end">
+          <div class="field"><label data-i18n="role_sales">销售员</label><select id="resetSalesSel"></select></div>
+          <button class="btn" data-i18n="reset_pwd" onclick="resetSalesPwd()">重置密码</button>
+        </div>
+        <div class="muted" style="font-size:12px;margin-top:4px" data-i18n="reset_pwd_hint">选择销售员后点「重置密码」，确认后其密码重置为 123456。未填手机号的销售员需先补手机号。</div>
+        <div class="block-sub" style="margin-top:14px" data-i18n="delete_sales_account">删除销售员账号</div>
+        <div class="row" style="align-items:flex-end">
+          <div class="field"><label data-i18n="role_sales">销售员</label><select id="deleteSalesSel"></select></div>
+          <button class="btn danger" data-i18n="delete" onclick="deleteSalesAccount()">删除</button>
+        </div>
+        <div class="muted" style="font-size:12px;margin-top:4px" data-i18n="delete_member_hint">选择销售员后点「删除」，确认后删除该销售员及其账号，其相关订单会保留。</div>
+      </div>
+    </div>
+  </div>
+</main>
+
+  <div id="viewBoard" style="display:none">
+    <div class="board-top">
+      <div class="board-id" id="boardId"></div>
+      <select id="boardMember" onchange="renderBoard()"></select>
+    </div>
+    <div class="board-block sales-block">
+      <div class="cards" id="boardCards"></div>
+      <div class="sec-title" id="boardPayTitle"></div>
+      <div class="cards" id="boardPay"></div>
+      <div class="goal" id="boardGoal"></div>
+      <div id="boardDetails"></div>
+    </div>
+    <div class="board-block team-block" id="myInfoBox"></div>
+  </div>
+</main>
+
+<div class="modal" id="modal"><div class="modal-box"><p id="modalText"></p><div class="modal-actions"><button class="btn" data-i18n="cancel" onclick="modalCancel()">取消</button><button class="btn danger" data-i18n="confirm" onclick="modalConfirm()">确认</button></div></div></div>
+<div class="modal" id="loginModal"><div class="modal-box">
+  <h3 style="margin:0 0 12px;font-size:14px" data-i18n="login">登录</h3>
+  <div class="field"><label data-i18n="account">账号（手机号）</label><input id="loginPhone" data-i18n-ph="account" placeholder="账号"></div>
+  <div class="field"><label data-i18n="password">密码</label><input id="loginPwd" type="password" data-i18n-ph="password" placeholder="密码"></div>
+  <div class="muted" style="margin:8px 0" data-i18n="test_accounts2">测试账号：admin / admin123（管理员）、staff / staff123（店员）、finance / finance123（财务）。销售员账号由录入人员时生成。</div>
+  <div class="modal-actions"><button class="btn" data-i18n="cancel" onclick="closeLogin()">取消</button><button class="btn primary" data-i18n="login" onclick="doLogin()">登录</button></div>
+</div></div>
+<div class="modal" id="changePwdModal"><div class="modal-box">
+  <h3 style="margin:0 0 12px;font-size:14px" data-i18n="change_pwd_title">修改密码</h3>
+  <div class="field"><label data-i18n="new_pwd">新密码</label><input id="newPwd" type="password" data-i18n-ph="new_pwd" placeholder="新密码"></div>
+  <div class="field"><label data-i18n="confirm_pwd">确认新密码</label><input id="newPwd2" type="password" data-i18n-ph="reenter" placeholder="再输一次"></div>
+  <div class="modal-actions"><button class="btn" data-i18n="cancel" onclick="closeChangePwd()">取消</button><button class="btn primary" data-i18n="confirm" onclick="doChangePwd()">确定</button></div>
+</div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const KEY = 'elife_proto_v2';
+const SUPABASE_URL = 'https://xxysdkyxoruzhrjfxxvy.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_dVmFJcWFtNwrMR143V_91g_jfStFtWa';
+const sb = (typeof window !== 'undefined' && window.supabase && window.supabase.createClient) ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+let db = load();
+let now = new Date();
+now.setHours(0, 0, 0, 0);
+let pendingAction = null, toastTimer = null, syncTimer = null;
+
+// ---------- 多语言 i18n ----------
+let lang = localStorage.getItem('elife_lang') || 'zh';
+function t(key) { return (I18N[lang] && I18N[lang][key]) || (I18N.zh[key] || key); }
+function setLang(l) { lang = l; localStorage.setItem('elife_lang', l); render(); }
+function applyI18n() {
+  document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.getAttribute('data-i18n')); });
+  document.querySelectorAll('[data-i18n-ph]').forEach(el => { el.placeholder = t(el.getAttribute('data-i18n-ph')); });
+  document.getElementById('langSel').value = lang;
+}
+
+const I18N = {
+zh: {
+  login_subtitle: '销售与薪酬管理系统', account: '账号（手机号）', password: '密码', login: '登录', enter_test: '进入测试模式',
+  test_accounts: '测试账号：admin / admin123（管理员）、staff / staff123（店员）、finance / finance123（财务）',
+  err_no_account: '请输入账号', err_no_such: '账号不存在，请检查账号', err_wrong_pwd: '密码错误，请重试',
+  app_title: 'E-Life 信息管理系统', tag: 'v0.5 · 管理员工作台 + 销售员看板', sys_time: '系统时间：', set_now: '设为当前', advance_month: '快进 1 个月', clear_data: '清空数据',
+  test_mode: '测试模式', logout: '退出', change_pwd: '改密码', tab_manage: '管理看板', tab_board: '销售员信息',
+  sales_block: '销售管理（自然月）', team_block: '团队管理', pay_block: '薪酬管理', perm_block: '权限配置',
+  sales_qty: '本月销售台数', sales_amt: '本月销售额', cal_done: '自然月 · 已完成', new_order: '下单入口', order_list: '订单明细与操作（时间近→远）',
+  add_member: '录入人员', add_sales_member: '录入销售员', member_table: '所有销售员业绩一览', level_alerts: '级别变动预警', sellers_month: '本月出单销售员', team_tree: '团队树总览',
+  pending_payroll: '待发薪总览（每人待打款）', salary_adj: '薪酬调整入口', record_payment: '录入打款', staff_accounts: '员工账号管理', reset_seller_pwd: '重置销售员密码', sales_accounts: '销售员账号', delete_sales_account: '删除销售员账号',
+  total_sellers: '总销售员数', sellers_month_count: '本月出单销售员数', l0_l3: 'L0–L3，顾客不计', natural_month: '自然月',
+  name: '姓名', person: '人员', gender: '性别', id_number: '身份证号', phone: '联系电话', address: '联系地址', bank_name: '银行户名', bank_account: '银行卡号', bank_branch: '开户行',
+  recommender: '推荐人', no_ref: '无（公司直招）', optional: '可选', required_star: ' *', locked: '不可改',
+  seller: '销售员（谁卖的）', model: '车型', price: '零售价（$）', qty: '件数', amount: '金额（$，正=奖励 / 负=扣减）', note: '备注（必填）', pay_amount: '打款金额（$，正数）', pay_note: '备注（可选）',
+  acc_name: '姓名', acc_phone: '账号（手机号）', acc_pwd: '初始密码', acc_role: '角色', role_admin: '管理员', role_staff: '店员', role_finance: '财务', role_sales: '销售员',
+  st_draft: '已录入', st_confirmed: '已确认订单', st_paid: '已确认收款', st_completed: '已完成',
+  lv_none: '顾客', lv_l0: 'L0 新人', lv_l1: 'L1 铜牌', lv_l2: 'L2 银牌', lv_l3: 'L3 金牌',
+  confirm_order: '确认订单', abandon: '放弃录入', confirm_pay: '确认收款', revert: '退回上一步', delete_order: '删除订单', confirm_delivery: '确认提货', revoke_order: '撤销订单',
+  record_order: '录入订单', record_adjustment: '录入调整项', save: '保存', cancel: '取消', confirm: '确认', edit: '编辑', discard: '放弃编辑', reset_pwd: '重置密码', delete: '删除', new_account: '新建账号',
+  col_no: '编号', col_name: '姓名', col_level: '级别', col_cycle: '滚动月', col_base: '本月底薪', col_comm: '本月提成', col_total: '本月合计', col_team: '本月团队出单', col_own: '本月自己出单', col_new: '本月开发新人',
+  col_due: '累计应得', col_paid: '已打款', col_pending: '待打款', col_seller: '销售员', col_model: '车型', col_price: '单价', col_qty: '件数', col_date: '完成日期', col_status: '状态', col_ops: '操作',
+  base_salary: '底薪', this_month_comm: '本月提成', this_month_total: '本月合计', no_fixed_salary: '无固定工资', in_cycle: '滚动月内', base_comm_adj: '底薪 + 提成 + 调整项',
+  cumulative: '累计与打款', total_due: '累计应得', paid: '已打款', pending: '待打款', edit_my_info: '编辑我的信息', my_info: '我的信息',
+  no_cycle: '无滚动月', no_team: '不按团队核算', accu_comm: '累计提成', no_seller: '暂无销售员', no_member: '暂无人员', no_order: '暂无订单', no_records: '暂无预警', no_sales: '本月暂无出单',
+  placeholder: '请选择销售员', logged_in: '已登录', pwd_reset_ok: '密码已修改', info_saved: '信息已保存', saved: '已保存', clear_confirm: '确认清空所有数据？',
+  hint: 'v0.5：管理员工作台（销售 / 团队 / 薪酬三大块，含录入与操作）+ 销售员信息。可录入人员/订单、查看团队、薪酬和账号。',
+  gender_f: '女', gender_m: '男', reset_pwd_hint: '选择销售员后点「重置密码」，确认后其密码重置为 123456。未填手机号的销售员需先补手机号。',
+  no_fixed: '无固定工资 · 无滚动月', ph_name: '如 Sopheak', ph_id: '身份证号', ph_phone: '联系电话', ph_addr: '联系地址', ph_bankname: '开户人姓名', ph_bankacc: '银行卡号', ph_bankbranch: '如 ABA Bank', ph_model: '如 E-City', ph_price: '1299', ph_amount: '如 -50', ph_note: '如：退单业绩回退调整', ph_payamt: '如 500', ph_paynote: '如：8月提成款', ph_accname: '如 店员小张', ph_accphone: '手机号',
+  change_pwd_title: '修改密码', new_pwd: '新密码', confirm_pwd: '确认新密码', reenter: '再输一次', test_accounts2: '测试账号：admin / admin123（管理员）、staff / staff123（店员）、finance / finance123（财务）。销售员账号由录入人员时生成。',
+  prev_page: '上一页', next_page: '下一页', page_of: '第 {p} / {t} 页',
+  unit_car: ' 台', unit_person: ' 人', col_month_qty: '本月台数', col_month_amt: '本月金额',
+  ind_done: '（已独立）', ind_pending: '（待独立）', dim_tag: '暗', pending_lv: '待升', confirm_indep: '确认独立', confirm_indep_text: '确认该 L3 独立？其小组业绩将不再计入上级。', alert_lv: '待升', alert_ind: '待独立（L3，可确认）', alert_downgrade: '连续 2 月未达标，再 1 月将降级',
+  toast_wrong: '账号或密码错误', toast_logout: '已退出登录', toast_newpwd: '请输入新密码', toast_mismatch: '两次输入的密码不一致',
+  toast_name: '请填写姓名', toast_id: '请填写身份证号', toast_phone: '请填写联系电话', toast_phone_dup: '该手机号已存在，请勿重复录入',
+  toast_accphone: '请填写账号（手机号）', toast_acc_dup: '该账号已存在', toast_acc_del: '账号已删除',
+  toast_seller: '请选择销售员', toast_member_first: '请先录入人员', toast_model: '请填写车型和有效零售价', toast_order_ok: '订单已录入',
+  toast_member: '请选择人员', toast_amount: '请填写有效金额', toast_note: '请填写备注', toast_adj_ok: '调整项已添加',
+  toast_pay_amt: '请填写有效打款金额（正数）', toast_pay_ok: '打款已记录', toast_revoke: '已生成反向订单', toast_clear: '数据已清空',
+  toast_indep: '已确认独立', toast_date: '请选择日期',
+  board_select_self: '请在右上角选择「我是谁」', board_no_member: '暂无人员，请先到「管理看板」录入',
+  base_salary_month: '底薪', basic_info: '基本信息', none_hint: '该人员尚未卖出车辆，还不是销售员（L0），暂无看板。卖出第 1 台车成为 L0 后开放看板。',
+  deducted: '已扣薪', normal: '正常', cumulative_pay: '累计与打款', paid_by_finance: '财务已付', due_minus_paid: '累计应得 − 已打款',
+  done_tag: '已完成', target_tag: '目标', become_l1: '成为 L1（本人累计卖 3 台）', team_sales: '团队出单', own_sales: '自己出单', new_recruits: '开发新人', unit_name: '名',
+  base_breakdown: '本月底薪构成', base_full: '基本底薪', base_deduct: '业绩扣除', comm_breakdown: '本月提成构成', col_rate: '比例', col_amount: '金额',
+  total_breakdown: '本月合计构成', other_adj: '其他调整', team_detail: '团队出单明细（含我）', recruit_detail: '开发新人', recruit: '新人',
+  my_team: '我的团队', no_comm_month: '本月暂无提成', no_team_month: '本月暂无出单', no_new_month: '本月暂无新开发', none_word: '无', col_cars: '台数',
+  base_short: '底', comm_short: '提', adj_short: '调', member_added: '已录入', account_generated: '，已生成销售员账号（手机号登录，初始密码 123456）', tip_gender: '性别', tip_id: '身份证', tip_phone: '电话', tip_addr: '地址', tip_bank: '银行卡',
+  delete_member_confirm: '确认删除该销售员？其相关订单会保留，但显示为「已删除」。', delete_member_ok: '已删除销售员', delete_member_hint: '选择销售员后点「删除」，确认后删除该销售员及其账号，其相关订单会保留。', no_phone: '（未填手机号）', pay_not_filled: '未填写',
+},
+en: {
+  login_subtitle: 'Sales & Commission Management', account: 'Account (Phone)', password: 'Password', login: 'Login', enter_test: 'Enter Test Mode',
+  test_accounts: 'Test accounts: admin / admin123 (Admin), staff / staff123 (Staff), finance / finance123 (Finance)',
+  err_no_account: 'Please enter account', err_no_such: 'Account not found', err_wrong_pwd: 'Wrong password',
+  app_title: 'E-Life Management System', tag: 'v0.5 · Admin Board + Sales Board', sys_time: 'System time: ', set_now: 'Set', advance_month: '+1 Month', clear_data: 'Clear Data',
+  test_mode: 'Test Mode', logout: 'Logout', change_pwd: 'Password', tab_manage: 'Admin Board', tab_board: 'Sales Info',
+  sales_block: 'Sales (Calendar Month)', team_block: 'Team', pay_block: 'Payroll', perm_block: 'Permissions',
+  sales_qty: 'Cars Sold This Month', sales_amt: 'Sales Amount This Month', cal_done: 'Calendar month · Completed', new_order: 'New Order', order_list: 'Orders (newest first)',
+  add_member: 'Add Member', add_sales_member: 'Add Sales Member', member_table: 'All Sales Performance', level_alerts: 'Level Change Alerts', sellers_month: 'Sellers This Month', team_tree: 'Team Tree',
+  pending_payroll: 'Pending Payroll', salary_adj: 'Salary Adjustment', record_payment: 'Record Payment', staff_accounts: 'Staff Accounts', reset_seller_pwd: 'Reset Seller Password', sales_accounts: 'Sales Accounts', delete_sales_account: 'Delete Sales Account',
+  total_sellers: 'Total Sellers', sellers_month_count: 'Sellers This Month', l0_l3: 'L0–L3, excl. customers', natural_month: 'Calendar month',
+  name: 'Name', person: 'Member', gender: 'Gender', id_number: 'ID Number', phone: 'Phone', address: 'Address', bank_name: 'Account Holder', bank_account: 'Bank Account', bank_branch: 'Bank Branch',
+  recommender: 'Recommender', no_ref: 'None (Direct)', optional: 'Optional', required_star: ' *', locked: 'Locked',
+  seller: 'Seller', model: 'Model', price: 'Price ($)', qty: 'Qty', amount: 'Amount ($, +bonus / -deduct)', note: 'Note (required)', pay_amount: 'Payment Amount ($)', pay_note: 'Note (optional)',
+  acc_name: 'Name', acc_phone: 'Account (Phone)', acc_pwd: 'Initial Password', acc_role: 'Role', role_admin: 'Admin', role_staff: 'Staff', role_finance: 'Finance', role_sales: 'Seller',
+  st_draft: 'Draft', st_confirmed: 'Confirmed', st_paid: 'Paid', st_completed: 'Completed',
+  lv_none: 'Customer', lv_l0: 'L0 New', lv_l1: 'L1 Bronze', lv_l2: 'L2 Silver', lv_l3: 'L3 Gold',
+  confirm_order: 'Confirm Order', abandon: 'Abandon', confirm_pay: 'Confirm Payment', revert: 'Revert', delete_order: 'Delete', confirm_delivery: 'Confirm Delivery', revoke_order: 'Revoke',
+  record_order: 'Add Order', record_adjustment: 'Add Adjustment', save: 'Save', cancel: 'Cancel', confirm: 'Confirm', edit: 'Edit', discard: 'Discard', reset_pwd: 'Reset Password', delete: 'Delete', new_account: 'Create Account',
+  col_no: 'No.', col_name: 'Name', col_level: 'Level', col_cycle: 'Cycle', col_base: 'Base', col_comm: 'Commission', col_total: 'Total', col_team: 'Team Sales', col_own: 'Own Sales', col_new: 'New Recruits',
+  col_due: 'Total Due', col_paid: 'Paid', col_pending: 'Pending', col_seller: 'Seller', col_model: 'Model', col_price: 'Price', col_qty: 'Qty', col_date: 'Completed', col_status: 'Status', col_ops: 'Actions',
+  base_salary: 'Base', this_month_comm: 'Commission', this_month_total: 'Total', no_fixed_salary: 'No fixed salary', in_cycle: 'This cycle', base_comm_adj: 'Base + Commission + Adjustments',
+  cumulative: 'Cumulative & Payments', total_due: 'Total Due', paid: 'Paid', pending: 'Pending', edit_my_info: 'Edit My Info', my_info: 'My Info',
+  no_cycle: 'No cycle', no_team: 'N/A (team)', accu_comm: 'Cumulative', no_seller: 'No sellers', no_member: 'No members', no_order: 'No orders', no_records: 'No alerts', no_sales: 'No sales this month',
+  placeholder: 'Select seller', logged_in: 'Logged in', pwd_reset_ok: 'Password changed', info_saved: 'Info saved', saved: 'Saved', clear_confirm: 'Clear all data?',
+  hint: 'v0.5: Admin board (Sales / Team / Payroll) + Sales Info. Manage members, orders, team performance, payroll and accounts.',
+  gender_f: 'Female', gender_m: 'Male', reset_pwd_hint: 'Select a seller then click "Reset Password"; the password is reset to 123456 after confirmation.',
+  no_fixed: 'No fixed salary · No cycle', ph_name: 'e.g. Sopheak', ph_id: 'ID number', ph_phone: 'Phone', ph_addr: 'Address', ph_bankname: 'Account holder', ph_bankacc: 'Bank account', ph_bankbranch: 'e.g. ABA Bank', ph_model: 'e.g. E-City', ph_price: '1299', ph_amount: 'e.g. -50', ph_note: 'e.g. refund adjustment', ph_payamt: 'e.g. 500', ph_paynote: 'e.g. August commission', ph_accname: 'e.g. Zhang', ph_accphone: 'Phone',
+  change_pwd_title: 'Change Password', new_pwd: 'New Password', confirm_pwd: 'Confirm Password', reenter: 'Re-enter', test_accounts2: 'Test accounts: admin / admin123 (Admin), staff / staff123 (Staff), finance / finance123 (Finance). Seller accounts are created when adding members.',
+  prev_page: 'Prev', next_page: 'Next', page_of: 'Page {p} / {t}',
+  unit_car: '', unit_person: '', col_month_qty: 'Cars', col_month_amt: 'Amount',
+  ind_done: ' (Independent)', ind_pending: ' (Pending)', dim_tag: 'Dim', pending_lv: 'pending ', confirm_indep: 'Confirm Independence', confirm_indep_text: 'Confirm this L3 as independent? Their team sales will no longer count upward.', alert_lv: 'pending', alert_ind: 'pending independence (L3)', alert_downgrade: '2 consecutive months below target; one more will demote',
+  toast_wrong: 'Wrong account or password', toast_logout: 'Logged out', toast_newpwd: 'Please enter new password', toast_mismatch: 'Passwords do not match',
+  toast_name: 'Please enter name', toast_id: 'Please enter ID', toast_phone: 'Please enter phone', toast_phone_dup: 'Phone already exists',
+  toast_accphone: 'Please enter account (phone)', toast_acc_dup: 'Account already exists', toast_acc_del: 'Account deleted',
+  toast_seller: 'Please select a seller', toast_member_first: 'Please add a member first', toast_model: 'Please enter model and valid price', toast_order_ok: 'Order added',
+  toast_member: 'Please select a member', toast_amount: 'Please enter valid amount', toast_note: 'Please enter note', toast_adj_ok: 'Adjustment added',
+  toast_pay_amt: 'Please enter valid payment amount', toast_pay_ok: 'Payment recorded', toast_revoke: 'Reverse order created', toast_clear: 'Data cleared',
+  toast_indep: 'Independence confirmed', toast_date: 'Please select a date',
+  board_select_self: 'Please select "Who am I" at top right', board_no_member: 'No members yet. Please add one in Admin Board.',
+  base_salary_month: 'Base', basic_info: 'Basic Info', none_hint: 'This person has not sold any car yet, not a seller (L0). The board opens after selling the 1st car to become L0.',
+  deducted: 'Deducted', normal: 'Normal', cumulative_pay: 'Cumulative & Payments', paid_by_finance: 'Paid by finance', due_minus_paid: 'Total due − Paid',
+  done_tag: 'Done', target_tag: 'Target', become_l1: 'Become L1 (sell 3 cars personally)', team_sales: 'Team sales', own_sales: 'Own sales', new_recruits: 'New recruits', unit_name: 'people',
+  base_breakdown: 'Base breakdown', base_full: 'Full base', base_deduct: 'Deduction', comm_breakdown: 'Commission breakdown', col_rate: 'Rate', col_amount: 'Amount',
+  total_breakdown: 'Monthly total breakdown', other_adj: 'Other adjustments', team_detail: 'Team sales detail (incl. me)', recruit_detail: 'New recruits', recruit: 'Recruit',
+  my_team: 'My team', no_comm_month: 'No commission this month', no_team_month: 'No sales this month', no_new_month: 'No new recruits this month', none_word: 'None', col_cars: 'Cars',
+  base_short: 'Base', comm_short: 'Comm', adj_short: 'Adj', member_added: 'Added', account_generated: ', seller account created (login by phone, initial password 123456)', tip_gender: 'Gender', tip_id: 'ID', tip_phone: 'Phone', tip_addr: 'Address', tip_bank: 'Bank',
+  delete_member_confirm: 'Delete this seller? Their orders will be kept but shown as "deleted".', delete_member_ok: 'Seller deleted', delete_member_hint: 'Select a seller then click "Delete"; the seller and their account are removed after confirmation, orders are kept.', no_phone: ' (no phone)', pay_not_filled: 'Not filled',
+}
+};
+
+// ---------- 权限 ----------
+let currentRole = 'admin';   // admin / staff / finance / sales
+let currentSalesId = null;   // 销售员身份时选中的销售员
+let currentUser = null;      // 当前登录的账号（null = 测试模式）
+let myInfoEditing = false;   // 销售员「我的信息」是否处于编辑状态
+
+const ROLE_PERM = {
+  admin: { viewManage: 1, viewAny: 1, addMember: 1, addOrder: 1, confirmOrder: 1, abandonOrder: 1, deleteOrder: 1, confirmPay: 1, revertPay: 1, confirmDelivery: 1, revokeOrder: 1, addPayment: 1, revokePayment: 1, addAdjustment: 1, confirmIndep: 1, deleteMember: 1, manageAccount: 1 },
+  staff: { viewManage: 1, addMember: 1, addOrder: 1, confirmOrder: 1, abandonOrder: 1, deleteOrder: 1, confirmPay: 1, confirmDelivery: 1 },
+  finance: { viewManage: 1, revokeOrder: 1, addPayment: 1, revokePayment: 1 },
+  sales: { viewSelf: 1 },
+};
+function can(perm) { return !!(ROLE_PERM[currentRole] || {})[perm]; }
+
+const ROLE_NAME = { admin: 'role_admin', staff: 'role_staff', finance: 'role_finance', sales: 'role_sales' };
+
+// ---------- 分页 / 排序状态 ----------
+const PAGE_SIZE = 15;
+let orderPage = 1, sellersPage = 1, memberPage = 1;
+let memberSortKey = 'no', memberSortDir = -1; // 业绩一览排序（-1 降序 / 1 升序）
+
+function pagerHtml(page, totalPages, setterName) {
+  if (totalPages <= 1) return '';
+  return `<div class="pager"><button class="btn small" ${page <= 1 ? 'disabled' : ''} onclick="${setterName}(${page - 1});render()">${t('prev_page')}</button><span class="muted">${t('page_of').replace('{p}', page).replace('{t}', totalPages)}</span><button class="btn small" ${page >= totalPages ? 'disabled' : ''} onclick="${setterName}(${page + 1});render()">${t('next_page')}</button></div>`;
+}
+function setOrderPage(p) { orderPage = p; }
+function setSellersPage(p) { sellersPage = p; }
+function setMemberPage(p) { memberPage = p; }
+function sortMember(key) {
+  if (memberSortKey === key) memberSortDir = -memberSortDir;
+  else { memberSortKey = key; memberSortDir = -1; }
+  memberPage = 1;
+  render();
+}
+
+function showLogin() { document.getElementById('loginModal').style.display = 'flex'; document.getElementById('loginPhone').focus(); }
+function closeLogin() { document.getElementById('loginModal').style.display = 'none'; }
+function loginAs(acc) {
+  currentUser = acc;
+  currentRole = acc.role;
+  currentSalesId = acc.memberId || null;
+  document.getElementById('loginCover').style.display = 'none';
+  applyAuthUI();
+  if (acc.role === 'sales') switchTab('board'); else switchTab('manage');
+  render();
+  showToast(`已登录：${acc.name}（${t(ROLE_NAME[acc.role])}）`);
+}
+function doLogin() {
+  const phone = document.getElementById('loginPhone').value.trim();
+  const pwd = document.getElementById('loginPwd').value;
+  const acc = db.accounts.find(a => a.phone === phone && a.password === pwd);
+  if (!acc) { showToast(t('toast_wrong')); return; }
+  closeLogin();
+  loginAs(acc);
+}
+function coverLogin() {
+  const phone = document.getElementById('coverPhone').value.trim();
+  const pwd = document.getElementById('coverPwd').value;
+  const err = document.getElementById('coverErr');
+  if (!phone) { err.style.display = ''; err.textContent = t('err_no_account'); return; }
+  const acc = db.accounts.find(a => a.phone === phone);
+  if (!acc) { err.style.display = ''; err.textContent = t('err_no_such'); return; }
+  if (acc.password !== pwd) { err.style.display = ''; err.textContent = t('err_wrong_pwd'); return; }
+  err.style.display = 'none';
+  document.getElementById('coverPwd').value = '';
+  loginAs(acc);
+}
+function enterTestMode() {
+  document.getElementById('loginCover').style.display = 'none';
+  switchTab('manage');
+  render();
+}
+function logout() {
+  currentUser = null;
+  currentSalesId = null;
+  document.getElementById('loginCover').style.display = 'flex';
+  applyAuthUI();
+  switchTab('manage');
+  render();
+  showToast(t('toast_logout'));
+}
+function applyAuthUI() {
+  const loggedIn = !!currentUser;
+  document.getElementById('authLabel').textContent = loggedIn ? `${currentUser.name}（${t(ROLE_NAME[currentUser.role])}）` : t('test_mode');
+  document.getElementById('btnLogin').style.display = loggedIn ? 'none' : '';
+  document.getElementById('btnChangePwd').style.display = loggedIn ? '' : 'none';
+  document.getElementById('btnLogout').style.display = loggedIn ? '' : 'none';
+}
+
+function showChangePwd() { document.getElementById('changePwdModal').style.display = 'flex'; }
+function closeChangePwd() { document.getElementById('changePwdModal').style.display = 'none'; }
+function doChangePwd() {
+  const p1 = document.getElementById('newPwd').value;
+  const p2 = document.getElementById('newPwd2').value;
+  if (!p1) { showToast(t('toast_newpwd')); return; }
+  if (p1 !== p2) { showToast(t('toast_mismatch')); return; }
+  currentUser.password = p1;
+  save();
+  closeChangePwd();
+  document.getElementById('newPwd').value = ''; document.getElementById('newPwd2').value = '';
+  showToast(t('pwd_reset_ok'));
+}
+function resetPwd(id) {
+  const acc = db.accounts.find(a => a.id === id);
+  if (!acc) return;
+  askConfirm(`确认将「${acc.name}」的密码重置为 123456？`, () => {
+    acc.password = '123456';
+    save(); render();
+    showToast(`已重置 ${acc.name} 的密码为 123456`);
+  });
+}
+
+function switchRole() {
+  currentRole = document.getElementById('roleSel').value;
+  const isSales = currentRole === 'sales';
+  document.getElementById('salesSel').style.display = isSales ? '' : 'none';
+  if (isSales) switchTab('board'); else switchTab('manage');
+  render();
+}
+
+function onSalesChange() {
+  currentSalesId = document.getElementById('salesSel').value || null;
+  render();
+}
+
+function fillSalesSel() {
+  const sel = document.getElementById('salesSel');
+  const cur = currentSalesId || sel.value || '';
+  sel.innerHTML = '<option value="">请选择销售员</option>' + db.members.filter(m => m.level !== 'none').map(m => `<option value="${m.id}" ${m.id === cur ? 'selected' : ''}>${memberLabel(m)}</option>`).join('');
+  currentSalesId = sel.value || null;
+}
+
+function defaultAccounts() {
+  return [
+    { id: 'admin1', phone: 'admin', password: 'admin123', role: 'admin', memberId: null, name: '系统管理员' },
+    { id: 'staff1', phone: 'staff', password: 'staff123', role: 'staff', memberId: null, name: '店员小王' },
+    { id: 'finance1', phone: 'finance', password: 'finance123', role: 'finance', memberId: null, name: '财务小李' },
+  ];
+}
+
+function load() {
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (raw) {
+      const d = JSON.parse(raw);
+      if (!d.nextMemberNo) d.nextMemberNo = 1001;
+      if (d.orderSeq == null) d.orderSeq = 0;
+      if (!d.adjustments) d.adjustments = [];
+      if (!d.payments) d.payments = [];
+      if (!d.accounts || !d.accounts.length) d.accounts = defaultAccounts();
+      const norm = (s) => { if (!s) return s; const dt = new Date(s); dt.setHours(0, 0, 0, 0); return dt.toISOString(); };
+      for (const m of d.members) { m.levelSince = norm(m.levelSince); m.pendingSince = norm(m.pendingSince); m.createdAt = norm(m.createdAt); if (m.consumeUpTo == null) m.consumeUpTo = null; if (m.independent == null) m.independent = false; if (m.independentAt == null) m.independentAt = null; if (m.pendingIndependent == null) m.pendingIndependent = false; if (m.spinSince == null) m.spinSince = null; if (m.baseAccrued == null) m.baseAccrued = 0; if (m.bankName == null) m.bankName = ''; if (m.bankAccount == null) m.bankAccount = ''; if (m.bankBranch == null) m.bankBranch = ''; }
+      // 测试兼容：给没手机号的成员按编号顺序补手机号（12345、123456、…），并生成销售员账号
+      const noPhone = d.members.filter(m => !m.phone).sort((a, b) => a.no - b.no);
+      noPhone.forEach((m, i) => {
+        const ph = '12345' + '67890'.slice(0, i);
+        m.phone = ph;
+        if (!d.accounts.some(a => a.phone === ph)) d.accounts.push({ id: uid(), phone: ph, password: '123456', role: 'sales', memberId: m.id, name: m.name });
+      });
+      for (const o of d.orders) { o.completedAt = norm(o.completedAt); o.createdAt = norm(o.createdAt); }
+      for (const p of d.payments) { p.createdAt = norm(p.createdAt); }
+      return d;
+    }
+  } catch (e) {}
+  return { members: [], orders: [], adjustments: [], payments: [], accounts: defaultAccounts(), nextMemberNo: 1001, orderSeq: 0 };
+}
+function save() {
+  localStorage.setItem(KEY, JSON.stringify(db));
+  if (sb) { clearTimeout(syncTimer); syncTimer = setTimeout(syncRemote, 400); }
+}
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+
+// ---------- Supabase 数据层 ----------
+const COL_MAP = {
+  members: { idNumber: 'id_number', bankName: 'bank_name', bankAccount: 'bank_account', bankBranch: 'bank_branch', recommenderId: 'recommender_id', levelSince: 'level_since', salaryState: 'salary_state', pendingLevel: 'pending_level', pendingSince: 'pending_since', consumeUpTo: 'consume_up_to', independentAt: 'independent_at', pendingIndependent: 'pending_independent', spinSince: 'spin_since', baseAccrued: 'base_accrued', createdAt: 'created_at' },
+  orders: { memberId: 'member_id', createdAt: 'created_at', completedAt: 'completed_at', isRevoke: 'is_revoke', originalId: 'original_id' },
+  adjustments: { memberId: 'member_id', createdAt: 'created_at' },
+  payments: { memberId: 'member_id', createdAt: 'created_at' },
+  accounts: { memberId: 'member_id' },
+};
+function toSnake(table, obj) { const map = COL_MAP[table] || {}; const out = {}; for (const k in obj) out[map[k] || k] = obj[k]; return out; }
+function toCamel(table, obj) { const map = COL_MAP[table] || {}; const rev = {}; for (const k in map) rev[map[k]] = k; const out = {}; for (const k in obj) out[rev[k] || k] = obj[k]; return out; }
+function normDate(s) { if (!s) return s; const dt = new Date(s); dt.setHours(0, 0, 0, 0); return dt.toISOString(); }
+async function loadRemote() {
+  if (!sb) { recompute(); render(); return; }
+  try {
+    const [mr, or, ar, pr, ac, st] = await Promise.all([
+      sb.from('members').select('*'),
+      sb.from('orders').select('*'),
+      sb.from('adjustments').select('*'),
+      sb.from('payments').select('*'),
+      sb.from('accounts').select('*'),
+      sb.from('app_state').select('*'),
+    ]);
+    if (mr.data) db.members = mr.data.map(r => toCamel('members', r));
+    if (or.data) db.orders = or.data.map(r => toCamel('orders', r));
+    if (ar.data) db.adjustments = ar.data.map(r => toCamel('adjustments', r));
+    if (pr.data) db.payments = pr.data.map(r => toCamel('payments', r));
+    if (ac.data && ac.data.length) db.accounts = ac.data.map(r => toCamel('accounts', r));
+    if (st.data && st.data.length) { db.orderSeq = st.data[0].order_seq || 0; db.nextMemberNo = st.data[0].next_member_no || 1001; }
+    for (const m of db.members) { m.levelSince = normDate(m.levelSince); m.pendingSince = normDate(m.pendingSince); m.createdAt = normDate(m.createdAt); if (m.consumeUpTo == null) m.consumeUpTo = null; if (m.independent == null) m.independent = false; if (m.independentAt == null) m.independentAt = null; if (m.pendingIndependent == null) m.pendingIndependent = false; if (m.spinSince == null) m.spinSince = null; if (m.baseAccrued == null) m.baseAccrued = 0; if (m.bankName == null) m.bankName = ''; if (m.bankAccount == null) m.bankAccount = ''; if (m.bankBranch == null) m.bankBranch = ''; }
+    for (const o of db.orders) { o.completedAt = normDate(o.completedAt); o.createdAt = normDate(o.createdAt); }
+    for (const p of db.payments) { p.createdAt = normDate(p.createdAt); }
+    for (const a of db.adjustments) { a.createdAt = normDate(a.createdAt); }
+    if (!db.accounts || !db.accounts.length) { db.accounts = defaultAccounts(); syncRemote(); }
+    localStorage.setItem(KEY, JSON.stringify(db));
+  } catch (e) {}
+  recompute(); render();
+}
+async function syncRemote() {
+  if (!sb) return;
+  try {
+    const del = (t) => sb.from(t).delete().neq('id', '__none__');
+    await del('members'); await del('orders'); await del('adjustments'); await del('payments'); await del('accounts');
+    if (db.members.length) await sb.from('members').insert(db.members.map(r => toSnake('members', r)));
+    if (db.orders.length) await sb.from('orders').insert(db.orders.map(r => toSnake('orders', r)));
+    if (db.adjustments.length) await sb.from('adjustments').insert(db.adjustments.map(r => toSnake('adjustments', r)));
+    if (db.payments.length) await sb.from('payments').insert(db.payments.map(r => toSnake('payments', r)));
+    if (db.accounts.length) await sb.from('accounts').insert(db.accounts.map(r => toSnake('accounts', r)));
+    await sb.from('app_state').upsert({ id: 1, order_seq: db.orderSeq, next_member_no: db.nextMemberNo });
+  } catch (e) {}
+}
+
+function showToast(m) { const t = document.getElementById('toast'); t.textContent = m; t.style.display = 'block'; clearTimeout(toastTimer); toastTimer = setTimeout(() => t.style.display = 'none', 2200); }
+function askConfirm(text, action) { pendingAction = action; document.getElementById('modalText').textContent = text; document.getElementById('modal').style.display = 'flex'; }
+function modalConfirm() { document.getElementById('modal').style.display = 'none'; if (pendingAction) { const a = pendingAction; pendingAction = null; a(); } }
+function modalCancel() { document.getElementById('modal').style.display = 'none'; pendingAction = null; }
+
+function fmtNo(n) { return n ? String(n).padStart(4, '0') : '—'; }
+function memberLabel(m) { return `${fmtNo(m.no)} ${m.name}`; }
+
+// ---------- 时间工具 ----------
+function addMonthsClamped(dateStr, n) {
+  const d = new Date(dateStr); const day = d.getDate();
+  const t = new Date(d); t.setDate(1); t.setMonth(t.getMonth() + n);
+  const lastDay = new Date(t.getFullYear(), t.getMonth() + 1, 0).getDate();
+  t.setDate(Math.min(day, lastDay)); return t;
+}
+function cycleIndexOf(levelSince, now) {
+  const s = new Date(levelSince);
+  let months = (now.getFullYear() - s.getFullYear()) * 12 + (now.getMonth() - s.getMonth());
+  const boundary = addMonthsClamped(levelSince, months);
+  if (now < boundary) months--;
+  return months;
+}
+
+// ---------- 人员 / 订单操作 ----------
+function addMember() {
+  const name = document.getElementById('mName').value.trim();
+  const gender = document.getElementById('mGender').value;
+  const idNumber = document.getElementById('mId').value.trim();
+  const phone = document.getElementById('mPhone').value.trim();
+  const address = document.getElementById('mAddr').value.trim();
+  const ref = document.getElementById('mRef').value || null;
+  const bankName = document.getElementById('mBankName').value.trim();
+  const bankAccount = document.getElementById('mBankAccount').value.trim();
+  const bankBranch = document.getElementById('mBankBranch').value.trim();
+  if (!name) { showToast(t('toast_name')); return; }
+  if (!idNumber) { showToast(t('toast_id')); return; }
+  if (!phone) { showToast(t('toast_phone')); return; }
+  if (db.members.some(m => m.phone === phone)) { showToast(t('toast_phone_dup')); return; }
+  const no = db.nextMemberNo++;
+  const memberId = uid();
+  db.members.push({ id: memberId, no, name, gender, idNumber, phone, address, recommenderId: ref, createdAt: now.toISOString(), bankName, bankAccount, bankBranch,
+    level: 'none', levelSince: now.toISOString(), salaryState: 'lit', pendingLevel: null, pendingSince: null, consumeUpTo: null, independent: false, independentAt: null, pendingIndependent: false, spinSince: null, baseAccrued: 0 });
+  // 填了手机号 → 自动生成销售员登录账号（初始密码 123456）
+  if (phone && !db.accounts.some(a => a.phone === phone)) {
+    db.accounts.push({ id: uid(), phone, password: '123456', role: 'sales', memberId, name });
+  }
+  save(); recompute(); render();
+  showToast(`${t('member_added')} ${fmtNo(no)} ${name}${phone ? t('account_generated') : ''}`);
+  document.getElementById('mName').value = ''; document.getElementById('mId').value = ''; document.getElementById('mPhone').value = ''; document.getElementById('mAddr').value = ''; document.getElementById('mBankName').value = ''; document.getElementById('mBankAccount').value = ''; document.getElementById('mBankBranch').value = '';
+}
+
+function editMyInfo() { myInfoEditing = true; render(); }
+function cancelEditMyInfo() { myInfoEditing = false; render(); }
+
+function saveMyInfo(id) {
+  const m = db.members.find(x => x.id === id);
+  if (!m) return;
+  m.address = document.getElementById('myAddr').value.trim();
+  m.bankName = document.getElementById('myBankName').value.trim();
+  m.bankAccount = document.getElementById('myBankAccount').value.trim();
+  m.bankBranch = document.getElementById('myBankBranch').value.trim();
+  myInfoEditing = false;
+  save(); recompute(); render();
+  showToast(t('info_saved'));
+}
+
+function updatePayInfo() {
+  const el = document.getElementById('payInfo');
+  const mid = document.getElementById('pMember').value;
+  if (!mid) { el.innerHTML = ''; return; }
+  const m = db.members.find(x => x.id === mid);
+  if (!m) { el.innerHTML = ''; return; }
+  const totalComm = commissionsByMember()[m.id] || 0;
+  const totalAdj = db.adjustments.filter(a => a.memberId === m.id).reduce((s, a) => s + a.amount, 0);
+  const totalPaid = db.payments.filter(p => p.memberId === m.id).reduce((s, p) => s + p.amount, 0);
+  const totalBase = totalBaseAccrued(m);
+  const pending = totalBase + totalComm + totalAdj - totalPaid;
+  const bank = (m.bankName || m.bankAccount || m.bankBranch)
+    ? `${t('bank_name')}：${m.bankName || '—'} · ${m.bankAccount || '—'} · ${m.bankBranch || '—'}`
+    : `${t('bank_name')}：<span class="dim">${t('pay_not_filled')}</span>`;
+  el.innerHTML = `${bank}<br>${t('pending')}：<b>$${pending.toFixed(2)}</b>`;
+}
+
+function addAccount() {
+  const name = document.getElementById('accName').value.trim();
+  const phone = document.getElementById('accPhone').value.trim();
+  const pwd = document.getElementById('accPwd').value.trim() || '123456';
+  const role = document.getElementById('accRole').value;
+  if (!name) { showToast(t('toast_name')); return; }
+  if (!phone) { showToast(t('toast_accphone')); return; }
+  if (db.accounts.some(a => a.phone === phone)) { showToast(t('toast_acc_dup')); return; }
+  db.accounts.push({ id: uid(), phone, password: pwd, role, memberId: null, name });
+  save(); render();
+  showToast(`已创建账号：${name}（${t(ROLE_NAME[role])}）`);
+  document.getElementById('accName').value = ''; document.getElementById('accPhone').value = '';
+}
+
+function deleteAccount(id) {
+  const acc = db.accounts.find(a => a.id === id);
+  if (!acc) return;
+  askConfirm(`确认删除账号「${acc.name}（${t(ROLE_NAME[acc.role])}）」？`, () => {
+    db.accounts = db.accounts.filter(a => a.id !== id);
+    save(); render();
+    showToast(t('toast_acc_del'));
+  });
+}
+
+function renderAccounts() {
+  const el = document.getElementById('accountList');
+  const staffs = db.accounts.filter(a => a.role !== 'sales');
+  const row = (a) => `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">
+    <span>${a.name} <span class="muted">${a.phone} · ${t(ROLE_NAME[a.role])}</span></span>
+    <span><button class="btn small" onclick="resetPwd('${a.id}')">重置密码</button> <button class="btn small danger" onclick="deleteAccount('${a.id}')">删除</button></span>
+  </div>`;
+  el.innerHTML = staffs.length ? `<div class="muted" style="margin:2px 0 4px">${t('staff_accounts')}</div>` + staffs.map(row).join('') : `<span class="muted">${t('no_member')}</span>`;
+
+  // 销售员下拉（重置密码 / 删除账号共用）
+  const salesMembers = db.members.filter(m => m.level !== 'none');
+  const fill = (selId) => {
+    const sel = document.getElementById(selId);
+    const cur = sel.value;
+    sel.innerHTML = `<option value="">${t('placeholder')}</option>` + salesMembers.map(m => `<option value="${m.id}" ${m.id === cur ? 'selected' : ''}>${memberLabel(m)}${m.phone ? '' : t('no_phone')}</option>`).join('');
+  };
+  fill('resetSalesSel');
+  fill('deleteSalesSel');
+}
+
+function deleteSalesAccount() {
+  const mid = document.getElementById('deleteSalesSel').value;
+  if (!mid) { showToast(t('toast_seller')); return; }
+  const m = db.members.find(x => x.id === mid);
+  askConfirm(t('delete_member_confirm'), () => deleteMember(mid));
+}
+
+function resetSalesPwd() {
+  const mid = document.getElementById('resetSalesSel').value;
+  if (!mid) { showToast(t('toast_seller')); return; }
+  const m = db.members.find(x => x.id === mid);
+  const acc = db.accounts.find(a => a.role === 'sales' && a.memberId === mid);
+  if (!acc) { showToast(`${m.name} 未填手机号，无账号，请先补录手机号`); return; }
+  askConfirm(`确认将「${m.name}」的登录密码重置为 123456？`, () => {
+    acc.password = '123456';
+    save(); render();
+    showToast(`已重置 ${m.name} 的密码为 123456`);
+  });
+}
+
+function deleteMember(id) {
+  const m = db.members.find(x => x.id === id);
+  if (!m) return;
+  // 下线（推荐人指向被删者）的推荐人清空
+  db.members.forEach(x => { if (x.recommenderId === id) x.recommenderId = null; });
+  // 删除该销售员的账号（若有）
+  db.accounts = db.accounts.filter(a => !(a.role === 'sales' && a.memberId === id));
+  db.members = db.members.filter(x => x.id !== id);
+  save(); recompute(); render();
+  showToast(t('delete_member_ok'));
+}
+
+function addOrder() {
+  const memberId = document.getElementById('oMember').value;
+  const model = document.getElementById('oModel').value.trim();
+  const price = parseFloat(document.getElementById('oPrice').value);
+  const qty = parseInt(document.getElementById('oQty').value) || 1;
+  if (!memberId) { showToast(t('toast_member_first')); return; }
+  if (!model || !price || price <= 0) { showToast(t('toast_model')); return; }
+  db.orders.push({ id: uid(), seq: null, memberId, model, price, qty, status: 'draft', createdAt: now.toISOString(), completedAt: null });
+  save(); recompute(); render(); showToast(t('toast_order_ok'));
+}
+
+function addAdjustment() {
+  const memberId = document.getElementById('aMember').value;
+  const amount = parseFloat(document.getElementById('aAmount').value);
+  const note = document.getElementById('aNote').value.trim();
+  if (!memberId) { showToast(t('toast_member')); return; }
+  if (!amount || isNaN(amount)) { showToast(t('toast_amount')); return; }
+  if (!note) { showToast(t('toast_note')); return; }
+  db.adjustments.push({ id: uid(), memberId, amount, note, createdAt: now.toISOString() });
+  save(); recompute(); render(); showToast(t('toast_adj_ok'));
+  document.getElementById('aAmount').value = '';
+  document.getElementById('aNote').value = '';
+}
+
+function addPayment() {
+  const memberId = document.getElementById('pMember').value;
+  const amount = parseFloat(document.getElementById('pAmount').value);
+  const note = document.getElementById('pNote').value.trim();
+  if (!memberId) { showToast(t('toast_member')); return; }
+  if (!amount || isNaN(amount) || amount <= 0) { showToast(t('toast_pay_amt')); return; }
+  db.payments.push({ id: uid(), memberId, amount, note, createdAt: now.toISOString() });
+  save(); recompute(); render(); showToast(t('toast_pay_ok'));
+  document.getElementById('pAmount').value = '';
+  document.getElementById('pNote').value = '';
+}
+
+function advance(id) {
+  const o = db.orders.find(x => x.id === id);
+  const seq = ['draft', 'confirmed', 'paid', 'completed'];
+  const i = seq.indexOf(o.status);
+  if (i < seq.length - 1) {
+    o.status = seq[i + 1];
+    if (o.status === 'completed') { o.completedAt = now.toISOString(); o.seq = db.orderSeq++; }
+    save(); recompute(); render();
+  }
+}
+function revert(id) {
+  const o = db.orders.find(x => x.id === id);
+  const seq = ['draft', 'confirmed', 'paid', 'completed'];
+  const i = seq.indexOf(o.status);
+  if (i > 0 && o.status !== 'completed') { o.status = seq[i - 1]; save(); recompute(); render(); }
+}
+function remove(id) { db.orders = db.orders.filter(x => x.id !== id); save(); recompute(); render(); }
+function revoke(id) {
+  const o = db.orders.find(x => x.id === id);
+  if (o.status !== 'completed') return;
+  db.orders.push({ id: uid(), seq: db.orderSeq++, memberId: o.memberId, model: o.model, price: o.price, qty: -o.qty, status: 'completed', createdAt: now.toISOString(), completedAt: now.toISOString(), isRevoke: true });
+  save(); recompute(); render(); showToast(t('toast_revoke'));
+}
+function resetData() { db = { members: [], orders: [], adjustments: [], payments: [], accounts: defaultAccounts(), nextMemberNo: 1001, orderSeq: 0 }; save(); recompute(); render(); showToast(t('toast_clear')); }
+
+// ---------- 业绩统计 ----------
+function allDownlines(memberId) {
+  const out = [];
+  for (const m of db.members) {
+    if (m.recommenderId === memberId) { out.push(m.id); out.push(...allDownlines(m.id)); }
+  }
+  return out;
+}
+function isExcludedFromTeam(ownerId, order) {
+  let cur = order.memberId;
+  while (cur && cur !== ownerId) {
+    const m = db.members.find(x => x.id === cur);
+    if (!m) break;
+    if (m.independent && m.independentAt && new Date(order.completedAt) >= new Date(m.independentAt)) return true;
+    cur = m.recommenderId;
+  }
+  return false;
+}
+function ownOrdersByTime(memberId) {
+  return db.orders.filter(o => o.memberId === memberId && o.status === 'completed').sort((a, b) => new Date(a.completedAt) - new Date(b.completedAt));
+}
+function ownQty(m, since) {
+  const upTo = m.consumeUpTo;
+  return db.orders.filter(o => o.memberId === m.id && o.status === 'completed' && (!since || new Date(o.completedAt) > since) && (upTo == null || o.seq > upTo)).reduce((s, o) => s + o.qty, 0);
+}
+function teamIds(memberId) { return [memberId, ...allDownlines(memberId)]; }
+function teamQty(m, since) {
+  const ids = teamIds(m.id);
+  const upTo = m.consumeUpTo;
+  return db.orders.filter(o => o.status === 'completed' && ids.includes(o.memberId) && (!since || new Date(o.completedAt) > since) && (upTo == null || o.seq > upTo)).reduce((s, o) => s + o.qty, 0);
+}
+function nthOwnOrderTime(memberId, n) {
+  let acc = 0;
+  for (const o of ownOrdersByTime(memberId)) { acc += o.qty; if (acc >= n) return o.completedAt; }
+  return null;
+}
+function nthOwnOrderSeq(memberId, n) {
+  let acc = 0;
+  for (const o of ownOrdersByTime(memberId)) { acc += o.qty; if (acc >= n) return o.seq; }
+  return null;
+}
+
+// ---------- 级别规则 ----------
+const LEVEL = { none: { name: 'lv_none', cls: 'none', base: 0 }, L0: { name: 'lv_l0', cls: 'l0', base: 0 }, L1: { name: 'lv_l1', cls: 'l1', base: 50 }, L2: { name: 'lv_l2', cls: 'l2', base: 200 }, L3: { name: 'lv_l3', cls: 'l3', base: 400 } };
+
+// 暗态底薪：L1 扣 100%；L2/L3 扣 30%（发 70%）
+function effectiveBase(m) {
+  const full = LEVEL[m.level] ? LEVEL[m.level].base : 0;
+  if (m.salaryState === 'dim') {
+    if (m.level === 'L1') return 0;
+    if (m.level === 'L2' || m.level === 'L3') return Math.round(full * 0.7);
+  }
+  return full;
+}
+
+// 按级别+亮暗取底薪金额
+function baseForLevel(level, state) {
+  const full = LEVEL[level] ? LEVEL[level].base : 0;
+  if (state === 'dim') {
+    if (level === 'L1') return 0;
+    if (level === 'L2' || level === 'L3') return Math.round(full * 0.7);
+  }
+  return full;
+}
+
+// 达标数组（可按 upto 截断）
+function passesUpTo(m, upto) {
+  const target = { L1: 3, L2: 8, L3: 15 };
+  const needOwn = { L1: 0, L2: 1, L3: 3 };
+  if (!(m.level in target)) return [];
+  const idx = cycleIndexOf(m.levelSince, upto);
+  const list = [];
+  for (let i = 0; i < idx; i++) {
+    const start = addMonthsClamped(m.levelSince, i);
+    const end = addMonthsClamped(m.levelSince, i + 1);
+    const tq = teamQtyInRange(m, start, end);
+    const own = ownQtyInRange(m, start, end);
+    let pass = tq >= target[m.level] && own >= needOwn[m.level];
+    if (m.level === 'L3' && pass) pass = newRecruitsInRange(m.id, start, end) >= 1;
+    list.push(pass);
+  }
+  return list;
+}
+
+// 结转：把 m 当前级别段（levelSince → upto）已应得的底薪累加到 baseAccrued
+function accrueBaseUpTo(m, upto) {
+  if (m.level === 'none' || m.level === 'L0') return;
+  const full = LEVEL[m.level].base;
+  const passes = passesUpTo(m, upto);
+  let sum = full; // 第 1 笔：levelSince 当天，亮，全额
+  // 第 2..N 笔：仅到 upto 前（passes[last] 对应 upto 当天，已属于新级别段，不计入旧段）
+  for (let i = 0; i < passes.length - 1; i++) sum += passes[i] ? full : baseForLevel(m.level, 'dim');
+  m.baseAccrued = (m.baseAccrued || 0) + sum;
+}
+
+// 当前级别段（levelSince → now）已应得底薪
+function currentBaseAccrued(m) {
+  if (m.level === 'none' || m.level === 'L0') return 0;
+  const full = LEVEL[m.level].base;
+  const passes = passesUpTo(m, now);
+  let sum = full;
+  for (let i = 0; i < passes.length; i++) sum += passes[i] ? full : baseForLevel(m.level, 'dim');
+  return sum;
+}
+
+// 累计应得底薪 = 历史结转 + 当前级别段
+function totalBaseAccrued(m) { return (m.baseAccrued || 0) + currentBaseAccrued(m); }
+
+function setLevel(m, level, since, state) {
+  accrueBaseUpTo(m, since); // 结转旧级别段的累计底薪（升级/降级前，用旧级别/旧 levelSince 计算）
+  m.level = level; m.levelSince = new Date(since).toISOString(); m.salaryState = state || 'lit'; m.pendingLevel = null; m.pendingSince = null;
+  // 脱离观察锚点：升到 L2 时初始化；升 L3 不重置（保持升 L2 时锚点）；降级回 L2 时刷新。
+  if (level === 'L2') m.spinSince = m.levelSince;
+}
+
+function qtyInRange(ids, start, end, upTo, ownerId) {
+  return db.orders.filter(o => o.status === 'completed' && ids.includes(o.memberId) && (upTo == null || o.seq > upTo) && (!ownerId || !isExcludedFromTeam(ownerId, o)) && (() => { const c = new Date(o.completedAt); return c >= start && c < end; })()).reduce((s, o) => s + o.qty, 0);
+}
+function teamQtyInRange(m, start, end) { return qtyInRange(teamIds(m.id), start, end, m.consumeUpTo, m.id); }
+function currentCycleTeamQty(m) {
+  if (m.level === 'none' || m.level === 'L0') return '—';
+  const idx = cycleIndexOf(m.levelSince, now);
+  const start = addMonthsClamped(m.levelSince, idx);
+  const end = addMonthsClamped(m.levelSince, idx + 1);
+  return teamQtyInRange(m, start, end);
+}
+function ownQtyInRange(m, start, end) { return qtyInRange([m.id], start, end, m.consumeUpTo); }
+
+function evaluateMember(m) {
+  const ownAll = ownQty(m, null);
+
+  // 顾客 → L0
+  if (m.level === 'none' && ownAll >= 1) { setLevel(m, 'L0', nthOwnOrderTime(m.id, 1)); }
+
+  // L0 → L1 即时升级（实时生效，封存个人累计 3 台）
+  if (m.level === 'L0' && ownAll >= 3) {
+    setLevel(m, 'L1', nthOwnOrderTime(m.id, 3), 'lit');
+    m.consumeUpTo = nthOwnOrderSeq(m.id, 3);
+  }
+
+  // 延迟升级：某滚动月内团队达标 → 满月后下周期第一天升级
+  // L1→L2：月度团队 ≥8 且 自己 ≥1；L2→L3：月度团队 ≥15 且 自己 ≥3
+  if (m.level === 'L1' || m.level === 'L2') {
+    const target = m.level === 'L1' ? 'L2' : 'L3';
+    const needTeam = m.level === 'L1' ? 8 : 15;
+    const needOwn = m.level === 'L1' ? 1 : 3;
+    const idx = cycleIndexOf(m.levelSince, now);
+    for (let i = 0; i <= idx; i++) {
+      const start = addMonthsClamped(m.levelSince, i);
+      const end = addMonthsClamped(m.levelSince, i + 1);
+      if (teamQtyInRange(m, start, end) >= needTeam && ownQtyInRange(m, start, end) >= needOwn) {
+        if (now >= end) setLevel(m, target, end, 'lit');
+        else { m.pendingLevel = target; m.pendingSince = start.toISOString(); }
+        break;
+      }
+    }
+  }
+}
+
+// 某时间段内，该成员下线中"新成为 L0"（卖出第1台）的人数
+function newRecruitsInRange(memberId, start, end) {
+  let count = 0;
+  for (const d of allDownlines(memberId)) {
+    const t = nthOwnOrderTime(d, 1);
+    if (t) { const ft = new Date(t); if (ft >= start && ft < end) count++; }
+  }
+  return count;
+}
+
+// 月度维持考核：返回该成员已结束周期的达标情况数组（true=达标）
+function cyclePassList(m) { return passesUpTo(m, now); }
+
+// 独立 L3 判定：连续 3 个滚动月达标（团队 ≥20、自己 ≥3、新开发 ≥1 新人），从「升 L2」起算、不受升 L3 重置。
+// 允许 L2 或 L3 进入判定（能连续 3 月 ≥20 者早已够 L3 门槛，无需先走完升级再等 3 个月）。
+function independentEligible(m) {
+  if (m.independent) return false;
+  if (!m.recommenderId) return false; // 顶层（上面没人）：不存在脱离，也不产生上级 $400 奖励
+  if (m.level !== 'L2' && m.level !== 'L3') return false;
+  const anchor = m.spinSince || m.levelSince;
+  const idx = cycleIndexOf(anchor, now);
+  if (idx < 3) return false;
+  for (let i = idx - 3; i < idx; i++) {
+    const start = addMonthsClamped(anchor, i);
+    const end = addMonthsClamped(anchor, i + 1);
+    if (teamQtyInRange(m, start, end) < 20 || ownQtyInRange(m, start, end) < 3 || newRecruitsInRange(m.id, start, end) < 1) return false;
+  }
+  return true;
+}
+
+function confirmIndependent(id) {
+  const m = db.members.find(x => x.id === id);
+  if (!m || (m.level !== 'L2' && m.level !== 'L3')) return;
+  // 若还是 L2，脱离即直接成为独立 L3（其达标数据已远超 L3 门槛）
+  if (m.level === 'L2') setLevel(m, 'L3', now.toISOString(), 'lit');
+  m.independent = true;
+  m.independentAt = now.toISOString();
+  m.pendingIndependent = false;
+  const upper = db.members.find(x => x.id === m.recommenderId);
+  if (upper && upper.level === 'L3') {
+    db.adjustments.push({ id: uid(), memberId: upper.id, amount: 400, note: `下级 L3（${memberLabel(m)}）独立奖励，分 4 个月发放`, createdAt: now.toISOString() });
+  }
+  save(); recompute(); render();
+  showToast(t('toast_indep'));
+}
+
+function recompute() {
+  // 先推进升级/延迟升级
+  for (const m of db.members) evaluateMember(m);
+  // 再计算亮暗 + 点亮 + 降级
+  for (const m of db.members) {
+    if (m.level === 'none' || m.level === 'L0') continue;
+    const passes = cyclePassList(m);
+
+    if (m.level === 'L1') {
+      // L1：变暗由"最近周期未达标"触发；点亮只由"变暗后团队累计再卖满 3 台"触发（暗期不考虑月份）
+      if (passes.length > 0 && !passes[passes.length - 1]) {
+        if (m.salaryState !== 'dim') {
+          // 累计起点 = 未达标滚动月的起点（未达标月的业绩可"结转"参与恢复累计，凑满 3 台即点亮）
+          m.dimSince = addMonthsClamped(m.levelSince, passes.length - 1).toISOString();
+          m.salaryState = 'dim';
+        }
+      }
+      if (m.salaryState === 'dim' && m.dimSince) {
+        const ds = new Date(m.dimSince);
+        const ids = teamIds(m.id);
+        let tq = 0;
+        for (const o of db.orders) {
+          if (o.status === 'completed' && ids.includes(o.memberId) && new Date(o.completedAt) >= ds) tq += o.qty;
+        }
+        if (tq >= 3) {
+          // 只封存"点亮用掉的那批订单"（从变暗起按录入顺序累计到 3 台），之后的新订单照算
+          const dimOrders = db.orders
+            .filter(o => o.status === 'completed' && ids.includes(o.memberId) && new Date(o.completedAt) >= ds)
+            .sort((a, b) => a.seq - b.seq);
+          let acc = 0, upTo = null;
+          for (const o of dimOrders) { acc += o.qty; upTo = o.seq; if (acc >= 3) break; }
+          m.consumeUpTo = upTo;
+          accrueBaseUpTo(m, now); // 点亮重置滚动月前，结转 L1 段的累计底薪
+          m.salaryState = 'lit'; m.dimSince = null; m.levelSince = now.toISOString();
+        }
+      }
+    } else {
+      // L2/L3：亮暗由最近一个已结束周期的月度达标决定，不改变滚动月周期
+      if (passes.length > 0) {
+        if (passes[passes.length - 1]) {
+          if (m.salaryState === 'dim') { m.salaryState = 'lit'; m.dimSince = null; }
+        } else {
+          if (m.salaryState !== 'dim') { m.dimSince = now.toISOString(); m.salaryState = 'dim'; }
+        }
+      }
+      // 降级：连续 3 个周期未达标，或 12 个周期内累计 3 个未达标
+      let streak = 0;
+      for (let i = passes.length - 1; i >= 0; i--) { if (!passes[i]) streak++; else break; }
+      const fail12 = passes.slice(-12).filter(p => !p).length;
+      if (streak >= 3 || fail12 >= 3) {
+        const down = m.level === 'L3' ? 'L2' : 'L1';
+        setLevel(m, down, addMonthsClamped(m.levelSince, passes.length), 'lit');
+        m.pendingIndependent = false; // 降级 = 不够强，取消待独立
+      }
+    }
+  }
+  // 独立 L3 判定（待人工确认）—— 一旦满足连续3月达标即锁存，不因后续窗口滑动/某月波动而取消
+  for (const m of db.members) {
+    if (!m.independent && !m.pendingIndependent) {
+      m.pendingIndependent = independentEligible(m);
+    }
+  }
+}
+
+// ---------- 提成（沿用 v0.1） ----------
+const RATES = [0.08, 0.02, 0.01, 0.005];
+function calcCommission(order) {
+  const out = []; let cur = order.memberId;
+  for (let i = 0; i < RATES.length; i++) {
+    out.push({ memberId: cur, amount: order.price * RATES[i] * order.qty });
+    const m = db.members.find(x => x.id === cur);
+    if (!m || !m.recommenderId) break; cur = m.recommenderId;
+  }
+  return out;
+}
+function commissionsByMember() {
+  const map = {};
+  for (const o of db.orders) { if (o.status !== 'completed') continue; for (const c of calcCommission(o)) map[c.memberId] = (map[c.memberId] || 0) + c.amount; }
+  return map;
+}
+
+// ---------- 时钟 ----------
+function fmtDate(d) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
+function fmtCycle(cyc) { const last = new Date(cyc.end); last.setDate(last.getDate() - 1); return `${fmtDate(cyc.start)} ~ ${fmtDate(last)}`; }
+function setNow() { const v = document.getElementById('nowInput').value; if (!v) { showToast(t('toast_date')); return; } now = new Date(v + 'T00:00:00'); recompute(); render(); }
+function advanceMonth() { now = addMonthsClamped(fmtDate(now), 1); now.setHours(0, 0, 0, 0); recompute(); render(); }
+
+function memberName(id) { const m = db.members.find(x => x.id === id); return m ? memberLabel(m) : '（已删除）'; }
+const STATUS = { draft: 'st_draft', confirmed: 'st_confirmed', paid: 'st_paid', completed: 'st_completed' };
+
+function render() {
+  document.getElementById('nowLabel').textContent = fmtDate(now);
+
+  // 权限：身份切换
+  applyAuthUI();
+  applyI18n();
+  const isSales = currentRole === 'sales';
+  const isAdmin = currentRole === 'admin';
+  document.getElementById('tabManage').style.display = isSales ? 'none' : '';
+  document.getElementById('tabBoard').style.display = (isSales || !isAdmin) ? 'none' : '';
+  document.getElementById('cardMember').style.display = can('addMember') ? '' : 'none';
+  document.getElementById('cardOrder').style.display = can('addOrder') ? '' : 'none';
+  document.getElementById('cardAdjust').style.display = can('addAdjustment') ? '' : 'none';
+  document.getElementById('cardPay').style.display = can('addPayment') ? '' : 'none';
+  document.getElementById('cardAccount').style.display = can('manageAccount') ? '' : 'none';
+  document.getElementById('cardSalesAccount').style.display = can('manageAccount') ? '' : 'none';
+  document.getElementById('cardMemberTable').style.display = can('viewAny') ? '' : 'none';
+  document.getElementById('blockPerm').style.display = can('manageAccount') ? '' : 'none';
+
+  const refSel = document.getElementById('mRef'); const curRef = refSel.value;
+  refSel.innerHTML = `<option value="">${t('no_ref')}</option>` + db.members.map(m => `<option value="${m.id}" ${m.id === curRef ? 'selected' : ''}>${memberLabel(m)}</option>`).join('');
+  const oSel = document.getElementById('oMember'); const curO = oSel.value;
+  oSel.innerHTML = db.members.map(m => `<option value="${m.id}" ${m.id === curO ? 'selected' : ''}>${memberLabel(m)}</option>`).join('');
+  const aSel = document.getElementById('aMember'); const curA = aSel.value;
+  aSel.innerHTML = db.members.map(m => `<option value="${m.id}" ${m.id === curA ? 'selected' : ''}>${memberLabel(m)}</option>`).join('');
+  const pSel = document.getElementById('pMember'); const curP = pSel.value;
+  pSel.innerHTML = db.members.map(m => `<option value="${m.id}" ${m.id === curP ? 'selected' : ''}>${memberLabel(m)}</option>`).join('');
+  updatePayInfo();
+  renderAccounts();
+
+  const comm = commissionsByMember();
+  const memberRows = db.members.map(m => {
+    const isL0 = m.level === 'none' || m.level === 'L0';
+    const cyc = currentCycle(m);
+    const c = comm[m.id] || 0;
+    const adjNow = cyc ? db.adjustments.filter(a => a.memberId === m.id && (() => { const t = new Date(a.createdAt); return t >= cyc.start && t < cyc.end; })()).reduce((s, a) => s + a.amount, 0) : 0;
+    const baseValue = isL0 ? null : effectiveBase(m);
+    const commValue = cyc ? commissionInRange(m.id, cyc.start, cyc.end) : null;
+    const totalValue = isL0 ? c : (effectiveBase(m) + (cyc ? commissionInRange(m.id, cyc.start, cyc.end) : 0) + adjNow);
+    const teamValue = cyc ? currentCycleTeamQty(m) : null;
+    const ownValue = cyc ? ownQtyInRange(m, cyc.start, cyc.end) : ownQty(m, null);
+    const newValue = cyc ? newRecruitsInRange(m.id, cyc.start, cyc.end) : null;
+    return { m, isL0, c, baseValue, commValue, totalValue, teamValue, ownValue, newValue };
+  });
+  const sortVal = { no: d => d.m.no, base: d => d.baseValue, comm: d => d.commValue, total: d => d.totalValue, team: d => d.teamValue, own: d => d.ownValue, new: d => d.newValue };
+  const keyFn = sortVal[memberSortKey] || sortVal.no;
+  memberRows.sort((a, b) => {
+    const va = keyFn(a), vb = keyFn(b);
+    if (va == null && vb == null) return 0;
+    if (va == null) return 1;
+    if (vb == null) return -1;
+    return (va - vb) * memberSortDir;
+  });
+  const memberTotalPages = Math.max(1, Math.ceil(memberRows.length / PAGE_SIZE));
+  if (memberPage > memberTotalPages) memberPage = memberTotalPages;
+  const memberSlice = memberRows.slice((memberPage - 1) * PAGE_SIZE, memberPage * PAGE_SIZE);
+
+  document.getElementById('memberTable').innerHTML = memberSlice.map(d => {
+    const m = d.m, lv = LEVEL[m.level];
+    const pending = m.pendingLevel ? `（${t('pending_lv')}${m.pendingLevel}）` : '';
+    const indMark = m.independent ? t('ind_done') : (m.pendingIndependent ? t('ind_pending') : '');
+    const cyc = currentCycle(m);
+    const cycleTxt = cyc ? fmtCycle(cyc) : t('no_cycle');
+    const baseNow = d.baseValue == null ? '—' : `$${d.baseValue}`;
+    const commNow = d.commValue == null ? '—' : `$${d.commValue.toFixed(2)}`;
+    const totalNow = d.isL0 ? `$${d.c.toFixed(2)}<span class="muted"> ${t('accu_comm')}</span>` : `$${d.totalValue.toFixed(2)}`;
+    const teamNow = d.teamValue == null ? t('no_team') : d.teamValue;
+    const newNow = d.newValue == null ? '—' : d.newValue;
+    const tip = ` title="${t('tip_gender')}:${m.gender || '—'}　${t('tip_id')}:${m.idNumber || '—'}　${t('tip_phone')}:${m.phone || '—'}　${t('tip_addr')}:${m.address || '—'}　${t('tip_bank')}:${m.bankAccount || '—'}"`;
+    const dimMark = (m.level !== 'none' && m.level !== 'L0' && m.salaryState === 'dim') ? ` <span class="dim">${t('dim_tag')}</span>` : '';
+    return `<tr>
+      <td class="no muted">${fmtNo(m.no)}</td>
+      <td${tip} style="cursor:help">${m.name}</td>
+      <td><span class="badge ${lv.cls}">${t(lv.name)}${pending}${indMark}</span>${dimMark}${m.pendingIndependent ? ` <button class="btn small primary" onclick="askConfirm(t('confirm_indep_text'), () => confirmIndependent('${m.id}'))">${t('confirm_indep')}</button>` : ''}</td>
+      <td class="muted">${cycleTxt}</td>
+      <td>${baseNow}</td>
+      <td>${commNow}</td>
+      <td>${totalNow}</td>
+      <td>${teamNow}</td>
+      <td>${d.ownValue}</td>
+      <td>${newNow}</td>
+    </tr>`;
+  }).join('') || `<tr><td colspan="10" class="muted">${t('no_member')}</td></tr>`;
+  document.getElementById('memberPager').innerHTML = pagerHtml(memberPage, memberTotalPages, 'setMemberPage');
+
+  const ordersSorted = [...db.orders].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  const orderTotalPages = Math.max(1, Math.ceil(ordersSorted.length / PAGE_SIZE));
+  if (orderPage > orderTotalPages) orderPage = orderTotalPages;
+  const orderSlice = ordersSorted.slice((orderPage - 1) * PAGE_SIZE, orderPage * PAGE_SIZE);
+  document.getElementById('orderTable').innerHTML = orderSlice.map(o => {
+    let ops = '';
+    if (o.status === 'draft') {
+      if (can('confirmOrder')) ops += `<button class="btn small primary" onclick="advance('${o.id}')">确认订单</button> `;
+      if (can('abandonOrder')) ops += `<button class="btn small danger" onclick="askConfirm('确认放弃录入？', () => remove('${o.id}'))">放弃录入</button>`;
+    } else if (o.status === 'confirmed') {
+      if (can('confirmPay')) ops += `<button class="btn small primary" onclick="advance('${o.id}')">确认收款</button> `;
+      if (can('revertPay')) ops += `<button class="btn small" onclick="revert('${o.id}')">退回上一步</button> `;
+      if (can('deleteOrder')) ops += `<button class="btn small danger" onclick="askConfirm('确认删除订单？', () => remove('${o.id}'))">删除订单</button>`;
+    } else if (o.status === 'paid') {
+      if (can('confirmDelivery')) ops += `<button class="btn small primary" onclick="advance('${o.id}')">确认提货</button> `;
+      if (can('revertPay')) ops += `<button class="btn small" onclick="revert('${o.id}')">退回上一步</button>`;
+    } else {
+      if (can('revokeOrder')) ops += `<button class="btn small danger" onclick="askConfirm('确认撤销订单？将生成反向订单。', () => revoke('${o.id}'))">撤销订单</button>`;
+    }
+    const mark = o.isRevoke ? '（反向单）' : '';
+    return `<tr><td>${memberName(o.memberId)}</td><td>${o.model}${mark}</td><td>${o.qty < 0 ? '-' : ''}$${Math.abs(o.price)}</td><td>${o.qty}</td><td class="muted">${o.completedAt ? fmtDate(new Date(o.completedAt)) : '—'}</td><td class="status">${t(STATUS[o.status])}</td><td>${ops || '<span class="muted">—</span>'}</td></tr>`;
+  }).join('') || `<tr><td colspan="7" class="muted">${t('no_order')}</td></tr>`;
+  document.getElementById('orderPager').innerHTML = pagerHtml(orderPage, orderTotalPages, 'setOrderPage');
+
+  renderBoard();
+  renderAdmin();
+}
+
+// ---------- 收入看板 ----------
+function currentCycle(m) {
+  if (m.level === 'none' || m.level === 'L0') return null;
+  const idx = cycleIndexOf(m.levelSince, now);
+  return { start: addMonthsClamped(m.levelSince, idx), end: addMonthsClamped(m.levelSince, idx + 1) };
+}
+
+function commissionInRange(memberId, start, end) {
+  let total = 0;
+  for (const o of db.orders) {
+    if (o.status !== 'completed') continue;
+    const ct = new Date(o.completedAt);
+    if (ct < start || ct >= end) continue;
+    let cur = o.memberId, depth = 0, found = false;
+    while (cur && depth < RATES.length) {
+      if (cur === memberId) { found = true; break; }
+      const mm = db.members.find(x => x.id === cur);
+      if (!mm || !mm.recommenderId) break;
+      cur = mm.recommenderId; depth++;
+    }
+    if (found) total += o.price * RATES[depth] * o.qty;
+  }
+  return total;
+}
+
+function commissionDetails(memberId, start, end) {
+  const rows = [];
+  for (const o of db.orders) {
+    if (o.status !== 'completed') continue;
+    const ct = new Date(o.completedAt);
+    if (ct < start || ct >= end) continue;
+    let cur = o.memberId, depth = 0, found = false;
+    while (cur && depth < RATES.length) {
+      if (cur === memberId) { found = true; break; }
+      const mm = db.members.find(x => x.id === cur);
+      if (!mm || !mm.recommenderId) break;
+      cur = mm.recommenderId; depth++;
+    }
+    if (found) rows.push({ seller: memberName(o.memberId), model: o.model, price: o.price, qty: o.qty, rate: RATES[depth], amount: o.price * RATES[depth] * o.qty, date: fmtDate(ct) });
+  }
+  return rows;
+}
+
+function baseBreakdown(m) {
+  const full = LEVEL[m.level] ? LEVEL[m.level].base : 0;
+  const net = effectiveBase(m);
+  const deduct = full - net;
+  let note = '无';
+  if (deduct > 0) note = (m.level === 'L1') ? '上月底薪考核未达标，L1 暗扣 100%' : '上月底薪考核未达标，按 7 折发放（扣 30%）';
+  return { full, deduct, net, note };
+}
+
+function adjustmentsInRange(memberId, start, end) {
+  return db.adjustments.filter(a => a.memberId === memberId && (() => { const t = new Date(a.createdAt); return t >= start && t < end; })());
+}
+
+function teamTree(m) {
+  const children = db.members.filter(x => x.recommenderId === m.id);
+  const lv = LEVEL[m.level];
+  const ind = m.independent ? t('ind_done') : (m.pendingIndependent ? t('ind_pending') : '');
+  const dim = (m.level !== 'none' && m.level !== 'L0' && m.salaryState === 'dim') ? ` <span class="dim">${t('dim_tag')}</span>` : '';
+  let html = `<span class="muted">${fmtNo(m.no)}</span> ${m.name} <span class="badge ${lv.cls}">${t(lv.name)}${ind}</span>${dim}`;
+  if (children.length) html += '<ul>' + children.map(teamTree).join('') + '</ul>';
+  return '<li>' + html + '</li>';
+}
+
+function newRecruitsDetail(memberId, start, end) {
+  const out = [];
+  for (const d of allDownlines(memberId)) {
+    const dm = db.members.find(x => x.id === d);
+    if (!dm) continue;
+    const t = new Date(dm.createdAt);
+    if (t >= start && t < end) out.push({ name: memberLabel(dm), level: LEVEL[dm.level].name, date: fmtDate(t) });
+  }
+  return out;
+}
+
+function renderBoard() {
+  const sel = document.getElementById('boardMember');
+  const isSales = currentRole === 'sales';
+  if (isSales) {
+    // 销售员：锁定自己，不能换人看
+    const me = db.members.find(m => m.id === currentSalesId);
+    sel.innerHTML = me ? `<option value="${me.id}">${memberLabel(me)}</option>` : '';
+    sel.disabled = true;
+  } else {
+    sel.disabled = false;
+    const cur = sel.value;
+    sel.innerHTML = db.members.map(m => `<option value="${m.id}" ${m.id === cur ? 'selected' : ''}>${memberLabel(m)}</option>`).join('');
+  }
+  const mid = isSales ? currentSalesId : (sel.value || (db.members[0] && db.members[0].id));
+  const bid = document.getElementById('boardId');
+  const cards = document.getElementById('boardCards');
+  const payTitle = document.getElementById('boardPayTitle');
+  const pay = document.getElementById('boardPay');
+  const goal = document.getElementById('boardGoal');
+  const det = document.getElementById('boardDetails');
+  if (!mid) {
+    bid.innerHTML = isSales ? `<span class="muted">${t('board_select_self')}</span>` : `<span class="muted">${t('board_no_member')}</span>`;
+    cards.innerHTML = ''; payTitle.innerHTML = ''; pay.innerHTML = ''; goal.innerHTML = ''; det.innerHTML = '';
+    return;
+  }
+  const m = db.members.find(x => x.id === mid);
+  const lv = LEVEL[m.level];
+  const cyc = currentCycle(m);
+  const cycTxt = cyc ? fmtCycle(cyc) : t('no_fixed');
+
+  const dim = (m.level !== 'none' && m.level !== 'L0' && m.salaryState === 'dim') ? ` <span class="dim">${t('dim_tag')}</span>` : '';
+  const ind = m.independent ? t('ind_done') : (m.pendingIndependent ? t('ind_pending') : '');
+  bid.innerHTML = `<span class="badge ${lv.cls}">${t(lv.name)}${ind}</span> <span class="name">${memberLabel(m)}</span>${dim} <span class="board-cycle">${t('base_salary_month')} $${effectiveBase(m)}/月 · ${cycTxt}</span>`;
+
+  // 我的信息（销售员本人可编辑）+ 管理员查看基本信息
+  const myInfo = document.getElementById('myInfoBox');
+  const locked = (label, val) => `<div class="field"><label>${label} (${t('locked')})</label><input value="${val}" disabled></div>`;
+  const ro = (label, val) => `<div class="field"><label>${label}</label><input value="${val}" disabled></div>`;
+  if (isSales) {
+    myInfo.style.display = '';
+    if (myInfoEditing) {
+      myInfo.innerHTML = `<div class="card">
+        <h2>${t('edit_my_info')}</h2>
+        <div class="row">${locked(t('name'), m.name)}${locked(t('gender'), m.gender || '')}</div>
+        <div class="row">${locked(t('id_number'), m.idNumber || '')}${locked(t('phone'), m.phone || '')}</div>
+        <div class="field"><label>${t('address')}</label><input id="myAddr" value="${m.address || ''}"></div>
+        <div class="field"><label>${t('bank_name')}</label><input id="myBankName" value="${m.bankName || ''}"></div>
+        <div class="row">
+          <div class="field"><label>${t('bank_account')}</label><input id="myBankAccount" value="${m.bankAccount || ''}"></div>
+          <div class="field"><label>${t('bank_branch')}</label><input id="myBankBranch" value="${m.bankBranch || ''}"></div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn" onclick="cancelEditMyInfo()">${t('discard')}</button>
+          <button class="btn primary" onclick="saveMyInfo('${m.id}')">${t('save')}</button>
+        </div>
+      </div>`;
+    } else {
+      myInfo.innerHTML = `<div class="card">
+        <h2>${t('my_info')}</h2>
+        <div class="row">${locked(t('name'), m.name)}${locked(t('gender'), m.gender || '')}</div>
+        <div class="row">${locked(t('id_number'), m.idNumber || '')}${locked(t('phone'), m.phone || '')}</div>
+        ${ro(t('address'), m.address || '')}
+        ${ro(t('bank_name'), m.bankName || '')}
+        <div class="row">${ro(t('bank_account'), m.bankAccount || '')}${ro(t('bank_branch'), m.bankBranch || '')}</div>
+        <button class="btn primary" onclick="editMyInfo()">${t('edit')}</button>
+      </div>`;
+    }
+  } else {
+    // 管理员/财务/店员：查看销售员完整基本信息（只读）
+    myInfo.style.display = '';
+    myInfo.innerHTML = `<div class="card">
+      <h2>${t('basic_info')}</h2>
+      <div class="row">${ro(t('name'), m.name)}${ro(t('gender'), m.gender || '')}</div>
+      <div class="row">${ro(t('id_number'), m.idNumber || '')}${ro(t('phone'), m.phone || '')}</div>
+      ${ro(t('address'), m.address || '')}
+      ${ro(t('bank_name'), m.bankName || '')}
+      <div class="row">${ro(t('bank_account'), m.bankAccount || '')}${ro(t('bank_branch'), m.bankBranch || '')}</div>
+    </div>`;
+  }
+
+  // 累计口径（所有人）
+  const totalComm = commissionsByMember()[m.id] || 0;
+  const totalAdj = db.adjustments.filter(a => a.memberId === m.id).reduce((s, a) => s + a.amount, 0);
+  const totalPaid = db.payments.filter(p => p.memberId === m.id).reduce((s, p) => s + p.amount, 0);
+  const totalBase = totalBaseAccrued(m); // 累计应得底薪（历史结转 + 当前段）
+  const totalDue = totalBase + totalComm + totalAdj; // 累计应得 = 底薪 + 提成 + 调整项
+  const pending = totalDue - totalPaid;
+
+  // 顾客（none）：无看板
+  if (m.level === 'none') {
+    cards.innerHTML = ''; payTitle.innerHTML = ''; pay.innerHTML = ''; goal.innerHTML = '';
+    det.innerHTML = `<div class="hint">${t('none_hint')}</div>`;
+    return;
+  }
+
+  // 本月口径（仅 L1/L2/L3）
+  let base = 0, commNow = 0, adjNow = 0, total = 0, baseInfo = null;
+  if (cyc) {
+    baseInfo = baseBreakdown(m);
+    base = baseInfo.net;
+    commNow = commissionInRange(m.id, cyc.start, cyc.end);
+    adjNow = adjustmentsInRange(m.id, cyc.start, cyc.end).reduce((s, a) => s + a.amount, 0);
+    total = base + commNow + adjNow;
+    cards.innerHTML = `
+      <div class="money-card"><div class="k">${t('col_base')}</div><div class="v">$${base}</div><div class="sub">${baseInfo.deduct > 0 ? t('deducted') : t('normal')}</div></div>
+      <div class="money-card"><div class="k">${t('col_comm')}</div><div class="v">$${commNow.toFixed(2)}</div><div class="sub">${t('in_cycle')}</div></div>
+      <div class="money-card"><div class="k">${t('col_total')}</div><div class="v">$${total.toFixed(2)}</div><div class="sub">${t('base_comm_adj')}</div></div>`;
+  } else {
+    cards.innerHTML = `<div class="money-card"><div class="k">${t('base_salary')}</div><div class="v">$0</div><div class="sub">${t('no_fixed_salary')}</div></div>`;
+  }
+
+  // 打款区（L0-L3 都显示）
+  payTitle.innerHTML = t('cumulative_pay');
+  pay.innerHTML = `
+    <div class="money-card"><div class="k">${t('total_due')}</div><div class="v">$${totalDue.toFixed(2)}</div><div class="sub">${t('base_salary_month')} ${totalBase} + ${t('col_comm')} ${totalComm.toFixed(2)} + ${t('other_adj')} ${totalAdj.toFixed(2)}</div></div>
+    <div class="money-card"><div class="k">${t('paid')}</div><div class="v">$${totalPaid.toFixed(2)}</div><div class="sub">${t('paid_by_finance')}</div></div>
+    <div class="money-card"><div class="k">${t('pending')}</div><div class="v ${pending < 0 ? 'dim' : ''}">$${pending.toFixed(2)}</div><div class="sub">${t('due_minus_paid')}</div></div>`;
+
+  const targetTeam = { L1: 3, L2: 8, L3: 15 }[m.level];
+  const targetOwn = { L2: 1, L3: 3 }[m.level];
+  const targetNew = { L3: 1 }[m.level];
+  const doneTeam = cyc ? teamQtyInRange(m, cyc.start, cyc.end) : 0;
+  const doneOwn = cyc ? ownQtyInRange(m, cyc.start, cyc.end) : 0;
+  const doneNew = cyc ? newRecruitsInRange(m.id, cyc.start, cyc.end) : 0;
+
+  const numBox = (done, target) => {
+    const cls = done >= target ? 'hit' : 'miss';
+    return `<div class="num-part"><span class="v ${cls}">${done}</span><span class="done-tag">${t('done_tag')}</span></div><span class="sep">/</span><div class="num-part"><span class="v">${target}</span><span class="target-tag">${t('target_tag')}</span></div>`;
+  };
+  const soloNum = (done, unit) => `<div class="num-part"><span class="v muted">${done}</span><span class="target-tag">${unit}</span></div>`;
+
+  let goalHtml;
+  if (m.level === 'L0') {
+    const ownTotal = ownQty(m, null);
+    goalHtml = `<div class="goal-box"><div class="k">${t('become_l1')}</div><div class="goal-num">${numBox(ownTotal, 3)}</div></div>`;
+  } else {
+    goalHtml = `
+      <div class="goal-box"><div class="k">${t('team_sales')}</div><div class="goal-num">${numBox(doneTeam, targetTeam)}</div></div>
+      <div class="goal-box"><div class="k">${t('own_sales')}</div><div class="goal-num">${targetOwn ? numBox(doneOwn, targetOwn) : soloNum(doneOwn, t('unit_car'))}</div></div>
+      <div class="goal-box"><div class="k">${t('new_recruits')}</div><div class="goal-num">${targetNew ? numBox(doneNew, targetNew) : soloNum(doneNew, t('unit_name'))}</div></div>`;
+  }
+  goal.innerHTML = goalHtml;
+
+  let detailHtml = '';
+  if (cyc) {
+    detailHtml += `<details><summary>${t('base_breakdown')}</summary><div class="inner"><table>
+      <tr><td>${t('base_full')}</td><td class="muted">${t(lv.name)}</td><td>$${baseInfo.full}</td></tr>
+      <tr><td>${t('base_deduct')}</td><td class="muted">${baseInfo.note}</td><td>${baseInfo.deduct ? '-$' + baseInfo.deduct : '—'}</td></tr>
+      <tr><td><b>${t('col_base')}</b></td><td></td><td><b>$${baseInfo.net}</b></td></tr>
+    </table></div></details>`;
+
+    const cd = commissionDetails(m.id, cyc.start, cyc.end);
+    detailHtml += `<details><summary>${t('comm_breakdown')} (${cd.length})</summary><div class="inner"><table>
+      <thead><tr><th>${t('col_seller')}</th><th>${t('col_model')}</th><th>${t('col_price')}</th><th>${t('col_rate')}</th><th>${t('col_amount')}</th><th>${t('col_date')}</th></tr></thead>
+      <tbody>${cd.map(r => `<tr><td>${r.seller}</td><td>${r.model}</td><td>${r.qty < 0 ? '-' : ''}$${Math.abs(r.price)}</td><td>${(r.rate * 100)}%</td><td>${r.amount < 0 ? '-' : ''}$${Math.abs(r.amount).toFixed(2)}</td><td class="muted">${r.date}</td></tr>`).join('') || `<tr><td colspan="6" class="muted">${t('no_comm_month')}</td></tr>`}</tbody>
+    </table></div></details>`;
+
+    const adjs = adjustmentsInRange(m.id, cyc.start, cyc.end);
+    detailHtml += `<details><summary>${t('total_breakdown')}</summary><div class="inner"><table>
+      <tr><td>${t('col_base')}</td><td></td><td>$${base}</td></tr>
+      <tr><td>${t('col_comm')}</td><td></td><td>$${commNow.toFixed(2)}</td></tr>
+      ${adjs.map(a => `<tr><td>${t('other_adj')}</td><td class="muted">${a.note}</td><td>${a.amount >= 0 ? '+' : ''}$${a.amount.toFixed(2)}</td></tr>`).join('') || `<tr><td>${t('other_adj')}</td><td class="muted">${t('none_word')}</td><td>—</td></tr>`}
+      <tr><td><b>${t('col_total')}</b></td><td></td><td><b>$${total.toFixed(2)}</b></td></tr>
+    </table></div></details>`;
+
+    const ids = teamIds(m.id);
+    const teamOrders = db.orders.filter(o => o.status === 'completed' && ids.includes(o.memberId) && (() => { const c = new Date(o.completedAt); return c >= cyc.start && c < cyc.end; })());
+    const agg = {};
+    for (const o of teamOrders) {
+      const key = o.memberId + '|' + fmtDate(new Date(o.completedAt));
+      if (!agg[key]) agg[key] = { seller: memberName(o.memberId), date: fmtDate(new Date(o.completedAt)), qty: 0 };
+      agg[key].qty += o.qty;
+    }
+    const aggRows = Object.values(agg).sort((a, b) => b.date.localeCompare(a.date));
+    detailHtml += `<details><summary>${t('team_detail')}</summary><div class="inner"><table>
+      <thead><tr><th>${t('col_seller')}</th><th>${t('col_cars')}</th><th>${t('col_date')}</th></tr></thead>
+      <tbody>${aggRows.map(r => `<tr><td>${r.seller}</td><td>${r.qty}</td><td class="muted">${r.date}</td></tr>`).join('') || `<tr><td colspan="3" class="muted">${t('no_team_month')}</td></tr>`}</tbody>
+    </table></div></details>`;
+
+    const newRec = newRecruitsDetail(m.id, cyc.start, cyc.end);
+    detailHtml += `<details><summary>${t('recruit_detail')} (${newRec.length})</summary><div class="inner"><table>
+      <thead><tr><th>${t('recruit')}</th><th>${t('col_level')}</th><th>${t('col_date')}</th></tr></thead>
+      <tbody>${newRec.map(r => `<tr><td>${r.name}</td><td>${t(r.level)}</td><td class="muted">${r.date}</td></tr>`).join('') || `<tr><td colspan="3" class="muted">${t('no_new_month')}</td></tr>`}</tbody>
+    </table></div></details>`;
+  }
+
+  const idsAll = teamIds(m.id);
+  const cnt = { none: 0, L0: 0, L1: 0, L2: 0, L3: 0 };
+  for (const id of idsAll) { const mm = db.members.find(x => x.id === id); if (mm) cnt[mm.level]++; }
+  const distTxt = `L0 ${cnt.L0} · L1 ${cnt.L1} · L2 ${cnt.L2} · L3 ${cnt.L3}`;
+  detailHtml += `<details open><summary>${t('my_team')} (${idsAll.length}${t('unit_person')}) · ${distTxt}</summary><div class="inner"><div class="tree">${teamTree(m)}</div></div></details>`;
+
+  det.innerHTML = detailHtml;
+}
+
+function naturalMonthRange() {
+  return { start: new Date(now.getFullYear(), now.getMonth(), 1), end: new Date(now.getFullYear(), now.getMonth() + 1, 1) };
+}
+
+function renderAdmin() {
+  const nm = naturalMonthRange();
+  const inMonth = (o) => { const c = new Date(o.completedAt); return o.status === 'completed' && c >= nm.start && c < nm.end; };
+
+  // 销售管理统计（自然月）
+  const salesQty = db.orders.filter(inMonth).reduce((s, o) => s + o.qty, 0);
+  const salesAmt = db.orders.filter(inMonth).reduce((s, o) => s + o.price * o.qty, 0);
+  document.getElementById('salesStats').innerHTML = `
+    <div class="money-card"><div class="k">${t('sales_qty')}</div><div class="v">${salesQty}${t('unit_car')}</div><div class="sub">${t('cal_done')}</div></div>
+    <div class="money-card"><div class="k">${t('sales_amt')}</div><div class="v">$${salesAmt.toFixed(2)}</div><div class="sub">${t('cal_done')}</div></div>`;
+
+  // 团队管理统计 + 出单名单
+  const sellers = db.members.filter(m => m.level !== 'none');
+  const monthMap = {};
+  for (const o of db.orders) {
+    if (o.status !== 'completed') continue;
+    const c = new Date(o.completedAt);
+    if (c < nm.start || c >= nm.end) continue;
+    if (!monthMap[o.memberId]) monthMap[o.memberId] = { m: db.members.find(x => x.id === o.memberId), qty: 0, amount: 0 };
+    monthMap[o.memberId].qty += o.qty;
+    monthMap[o.memberId].amount += o.price * o.qty;
+  }
+  const sellerList = Object.values(monthMap).filter(x => x.m).sort((a, b) => b.qty - a.qty);
+  document.getElementById('teamStats').innerHTML = `
+    <div class="money-card"><div class="k">${t('total_sellers')}</div><div class="v">${sellers.length}${t('unit_person')}</div><div class="sub">${t('l0_l3')}</div></div>
+    <div class="money-card"><div class="k">${t('sellers_month_count')}</div><div class="v">${sellerList.length}${t('unit_person')}</div><div class="sub">${t('natural_month')}</div></div>`;
+  const sellersTotalPages = Math.max(1, Math.ceil(sellerList.length / PAGE_SIZE));
+  if (sellersPage > sellersTotalPages) sellersPage = sellersTotalPages;
+  const sellersSlice = sellerList.slice((sellersPage - 1) * PAGE_SIZE, sellersPage * PAGE_SIZE);
+  document.getElementById('adminSellers').innerHTML = sellersSlice.length
+    ? `<div class="card" style="padding:8px"><table>
+        <thead><tr><th>${t('col_seller')}</th><th>${t('col_month_qty')}</th><th>${t('col_month_amt')}</th></tr></thead>
+        <tbody>${sellersSlice.map(s => `<tr><td>${memberLabel(s.m)}</td><td>${s.qty}${t('unit_car')}</td><td>$${s.amount.toFixed(2)}</td></tr>`).join('')}</tbody>
+      </table></div>`
+    : `<div class="alert none">${t('no_sales')}</div>`;
+  document.getElementById('sellersPager').innerHTML = pagerHtml(sellersPage, sellersTotalPages, 'setSellersPage');
+
+  // 薪酬管理：发薪总览（L0-L3，按待打款降序）
+  const rows = db.members.filter(m => m.level !== 'none').map(m => {
+    const totalComm = commissionsByMember()[m.id] || 0;
+    const totalAdj = db.adjustments.filter(a => a.memberId === m.id).reduce((s, a) => s + a.amount, 0);
+    const totalPaid = db.payments.filter(p => p.memberId === m.id).reduce((s, p) => s + p.amount, 0);
+    const totalBase = totalBaseAccrued(m);
+    const due = totalBase + totalComm + totalAdj;
+    return { m, totalBase, totalComm, totalAdj, totalPaid, due, pending: due - totalPaid };
+  }).sort((a, b) => b.pending - a.pending);
+
+  document.getElementById('adminSalaryTable').innerHTML = rows.map(r => {
+    return `<tr>
+      <td class="no muted">${fmtNo(r.m.no)}</td>
+      <td>${r.m.name}</td>
+      <td>$${r.due.toFixed(2)}<div class="muted">${t('base_short')} ${r.totalBase} + ${t('comm_short')} ${r.totalComm.toFixed(2)} + ${t('adj_short')} ${r.totalAdj.toFixed(2)}</div></td>
+      <td>$${r.totalPaid.toFixed(2)}</td>
+      <td><b>$${r.pending.toFixed(2)}</b></td>
+    </tr>`;
+  }).join('') || `<tr><td colspan="5" class="muted">${t('no_seller')}</td></tr>`;
+
+  // 级别变动预警
+  const alerts = [];
+  for (const m of db.members) {
+    if (m.level === 'none') continue;
+    if (m.pendingLevel) alerts.push({ cls: 'up', txt: `${memberLabel(m)} ${t('alert_lv')} ${m.pendingLevel}` });
+    if (m.pendingIndependent) alerts.push({ cls: 'ind', txt: `${memberLabel(m)} ${t('alert_ind')}` });
+    if (m.level === 'L2' || m.level === 'L3') {
+      const passes = cyclePassList(m);
+      let streak = 0;
+      for (let i = passes.length - 1; i >= 0; i--) { if (!passes[i]) streak++; else break; }
+      if (streak === 2) alerts.push({ cls: 'down', txt: `${memberLabel(m)} ${t('alert_downgrade')}` });
+    }
+  }
+  document.getElementById('adminAlerts').innerHTML = alerts.length
+    ? alerts.map(a => `<div class="alert ${a.cls}">${a.txt}</div>`).join('')
+    : `<div class="alert none">${t('no_records')}</div>`;
+
+  // 团队树总览（从顶层开始）
+  const roots = db.members.filter(m => !m.recommenderId);
+  document.getElementById('adminTree').innerHTML = roots.length
+    ? '<ul>' + roots.map(teamTree).join('') + '</ul>'
+    : `<span class="muted">${t('no_member')}</span>`;
+}
+
+function switchTab(tab) {
+  if (currentRole === 'sales') tab = 'board'; // 销售员只能看收入看板
+  document.getElementById('viewManage').style.display = tab === 'manage' ? '' : 'none';
+  document.getElementById('viewBoard').style.display = tab === 'board' ? '' : 'none';
+  document.getElementById('tabManage').classList.toggle('active', tab === 'manage');
+  document.getElementById('tabBoard').classList.toggle('active', tab === 'board');
+  if (tab === 'board') renderBoard();
+}
+
+recompute();
+render();
+loadRemote();
+</script>
+</body>
+</html>
